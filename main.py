@@ -3,6 +3,7 @@ from telegram.ext import *
 from telegram import Update
 
 import keys
+import db
 
 print ('Starting up bot...')
 
@@ -47,6 +48,10 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error: {context.error}')
 
 if __name__ == '__main__':
+    db.connect()
+    #db.create_query()
+    db.insert()
+    db.disconnect()
     dp = Application.builder().token(keys.token).build()
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('help', help_command))
