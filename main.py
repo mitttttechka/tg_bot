@@ -10,17 +10,7 @@ print ('Starting up bot...')
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
-    keyboard = [
-        [
-            InlineKeyboardButton("Option 1", callback_data="1"),
-            InlineKeyboardButton("Option 2", callback_data="2"),
-        ],
-        [InlineKeyboardButton("Option 3", callback_data="3")],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text("Please choose:", reply_markup=reply_markup)
+    await update.message.reply_text('Welcome to the learning bot!')
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
@@ -30,7 +20,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     await query.answer()
 
-    await query.edit_message_text(text=f"Selected option: {query.data}")
+    response: (str, InlineKeyboardMarkup) = program.menu_button_press(query.data)
+
+    await query.edit_message_text(text=response[0], reply_markup=response[1])
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('I\'ll help you')
@@ -44,20 +36,17 @@ async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     print(f'User ({update.message.chat.id}) says: "{text}"')
 
-    response: str = program.handle_response(update.message.chat)
+    response: (str, InlineKeyboardMarkup) = program.handle_response(update.message)
 
     print('Bot: ', response)
-    await update.message.reply_text(response)
+    await update.message.reply_text(response[0], reply_markup=response[1])
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error: {context.error}')
 
 if __name__ == '__main__':
     db.connect()
-    db.renew_database()
-    #db.insert('sections', [(1, 'test'), (2, 'test')])
-    #db.select('sections', ['section_id', 'section_name'])
-    #db.disconnect()
+    #db.renew_database()
     dp = Application.builder().token(keys.token).build()
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('help', help_command))
@@ -68,4 +57,6 @@ if __name__ == '__main__':
     dp.add_error_handler(error)
 
     dp.run_polling(poll_interval=3)
+
+    #db.disconnect()
 
