@@ -1,12 +1,19 @@
 from typing import Final
+import logging
 from telegram.ext import *
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 
 import keys
 import db
 import program
+import menus
 
-print ('Starting up bot...')
+
+logging.basicConfig(format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])',
+                    datefmt='%d/%m/%Y %I:%M:%S %p',
+                    level=logging.DEBUG)
+
+logging.info('Starting up bot...')
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
@@ -20,7 +27,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     await query.answer()
 
-    response: (str, InlineKeyboardMarkup) = program.menu_button_press(query.data)
+    response: (str, InlineKeyboardMarkup) = menus.menu_button_press(query.data, query.message.chat.id)
 
     await query.edit_message_text(text=response[0], reply_markup=response[1])
 
@@ -34,15 +41,15 @@ async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text: str = update.message.text
 
-    print(f'User ({update.message.chat.id}) says: "{text}"')
+    logging.info(f'User ({update.message.chat.id}) says: "{text}"')
 
     response: (str, InlineKeyboardMarkup) = program.handle_response(update.message)
 
-    print('Bot: ', response)
+    logging.info('Bot: ', response)
     await update.message.reply_text(response[0], reply_markup=response[1])
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f'Update {update} caused error: {context.error}')
+    logging.error(f'Update {update} caused error: {context.error}')
 
 if __name__ == '__main__':
     db.connect()
