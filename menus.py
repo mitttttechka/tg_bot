@@ -5,7 +5,7 @@ import user
 def menu_button_press(data, user_id):
     data = str(data)
     person = user.User(user_id)
-    person.set_progress_point(data)
+    person.set_progress_point(int(data))
     if data == '3':
         return learn_menu()
     elif data == '4':
@@ -28,6 +28,10 @@ def menu_button_press(data, user_id):
         return manage_tests_menu()
     elif data == '56':
         return manage_learning_tracks_menu()
+    elif data == '59':
+        return add_task()
+    elif data == '63':
+        return add_section_request()
     else:
         return main_menu()
 
@@ -122,6 +126,10 @@ def manage_tasks_menu():
     return f"Manage tasks menu / 52", reply_markup
 
 
+def add_task():
+    return f"Please write task context:", None
+
+
 def manage_classes_menu():
     keyboard = [
         [InlineKeyboardButton("Add class", callback_data="61")],
@@ -143,6 +151,9 @@ def manage_sections_menu():
     reply_markup = InlineKeyboardMarkup(keyboard)
     return f"Manage sections menu / 54", reply_markup
 
+
+def add_section_request():
+    return f"Please write new section name:", None
 
 def manage_tests_menu():
     keyboard = [

@@ -11,7 +11,7 @@ import menus
 
 logging.basicConfig(format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])',
                     datefmt='%d/%m/%Y %I:%M:%S %p',
-                    level=logging.DEBUG)
+                    level=logging.WARNING)
 
 logging.info('Starting up bot...')
 
@@ -53,7 +53,7 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     db.connect()
-    #db.renew_database()
+    db.renew_database()
     dp = Application.builder().token(keys.token).build()
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('help', help_command))

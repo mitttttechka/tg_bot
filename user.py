@@ -2,7 +2,11 @@ import db
 import logging
 
 
+active_users = []
+
+
 class User:
+    task = None
 
     def __init__(self, user_id):
         self.user_id = user_id
@@ -27,7 +31,30 @@ class User:
     def set_progress_point(self, progress_point):
         db.set_progress(self.user_id, int(progress_point))
         self.progress_point = progress_point
+        update_active_users(self)
 
     def update_name(self, name):
         db.update_name(self.user_id, name)
         self.user_name = name
+        update_active_users(self)
+
+
+def get_user(user_id):
+    has_active = find_user_in_active(user_id)
+    if has_active != -1:
+        return active_users[has_active]
+    new_user = User(user_id)
+    active_users.append(new_user)
+    return new_user
+
+
+def find_user_in_active(user_id):
+    for i in range(len(active_users)):
+        if active_users[i].user_id == user_id:
+            return i
+    return -1
+
+
+def update_active_users(user):
+    index = find_user_in_active(user.user_id)
+    active_users[index] = user

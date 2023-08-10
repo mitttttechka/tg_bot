@@ -14,3 +14,7 @@ class Task:
 
     def get_task_info(self):
         db.get_task
+
+
+def add_new_section(text):
+    db.add_new_section(text)

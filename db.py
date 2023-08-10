@@ -1,9 +1,19 @@
 import psycopg2
 import logging
 
+
 class Connection:
     conn = None
     user_table = 'users'
+    tests_table = 'prescripted_test'
+    test_rule_table = 'test_rule'
+    sections_table = 'sections'
+    task_table = 'task'
+    statistics_table = 'statistics'
+    task_answers_table = 'task_answers'
+    learning_track_table = 'learning_track'
+    students_table = 'students'
+    class_table = 'class'
 
 
 def connect():
@@ -47,28 +57,31 @@ def send_query(query):
 
 
 def renew_database():
-    q = "DROP TABLE prescripted_test;" \
-        "DROP TABLE test_rule;" \
-        "DROP TABLE sections;" \
-        "DROP TABLE task;" \
-        "DROP TABLE statistics;" \
-        "DROP TABLE task_answers;" \
-        "DROP TABLE learning_track;" \
-        "DROP TABLE students;" \
-        "DROP TABLE users;" \
-        "DROP TABLE class;" \
-        "CREATE TABLE prescripted_test (test_id integer, task_id integer, sort integer); " \
-        "CREATE TABLE test_rule (track_id integer, section_id integer, number_tasks integer, sort integer); " \
-        "CREATE TABLE sections (section_id integer, section_name varchar(30)); " \
-        "CREATE TABLE task (task_id integer, text text, picture_link text, question boolean, section_id integer); " \
-        "CREATE TABLE statistics (user_id bigint, test_id integer, correct boolean, " \
-        "dt timestamp DEFAULT current_timestamp); " \
-        "CREATE TABLE task_answers (task_id integer, answer text, correct boolean); " \
-        "CREATE TABLE learning_track (track_id integer, sort integer, task_id integer); " \
-        "CREATE TABLE students (user_id bigint, track_id integer, sort integer); " \
-        "CREATE TABLE users (user_id bigint, user_name varchar(30), type integer DEFAULT 1, " \
-        "class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0); " \
-        "CREATE TABLE class (class_id integer, class_name text);"
+    q = f"DROP TABLE {Connection.tests_table};" \
+        f"DROP TABLE {Connection.test_rule_table};" \
+        f"DROP TABLE {Connection.sections_table};" \
+        f"DROP TABLE {Connection.task_table};" \
+        f"DROP TABLE {Connection.statistics_table};" \
+        f"DROP TABLE {Connection.task_answers_table};" \
+        f"DROP TABLE {Connection.learning_track_table};" \
+        f"DROP TABLE {Connection.students_table};" \
+        f"DROP TABLE {Connection.user_table};" \
+        f"DROP TABLE {Connection.class_table};" \
+        f"CREATE TABLE {Connection.tests_table} (test_id integer, task_id integer, sort integer); " \
+        f"CREATE TABLE {Connection.test_rule_table} (track_id integer, section_id integer," \
+        f" number_tasks integer, sort integer); " \
+        f"CREATE TABLE {Connection.sections_table} (section_id integer, section_name varchar(30)); " \
+        f"INSERT INTO {Connection.sections_table} VALUES (0, 'default'); " \
+        f"CREATE TABLE {Connection.task_table} (task_id integer, text text, picture_link text, " \
+        f"question boolean, section_id integer); " \
+        f"CREATE TABLE {Connection.statistics_table} (user_id bigint, test_id integer, correct boolean, " \
+        f"dt timestamp DEFAULT current_timestamp); " \
+        f"CREATE TABLE {Connection.task_answers_table} (task_id integer, answer text, correct boolean); " \
+        f"CREATE TABLE {Connection.learning_track_table} (track_id integer, sort integer, task_id integer); " \
+        f"CREATE TABLE {Connection.students_table} (user_id bigint, track_id integer, sort integer); " \
+        f"CREATE TABLE {Connection.user_table} (user_id bigint, user_name varchar(30), type integer DEFAULT 1, " \
+        f"class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0); " \
+        f"CREATE TABLE {Connection.class_table} (class_id integer, class_name text);"
     send_query(q)
 
 
@@ -115,4 +128,11 @@ def set_progress(user_id, progress_point):
 
 def update_name(user_id, name):
     q = f'UPDATE {Connection.user_table} SET user_name = \'{name}\' WHERE user_id = {user_id}'
+    send_query(q)
+
+
+def add_new_section(text):
+    q = f'INSERT INTO {Connection.sections_table} VALUES (' \
+        f'(SELECT MAX(section_id) + 1 FROM {Connection.sections_table}), ' \
+        f'\'{text}\')'
     send_query(q)
