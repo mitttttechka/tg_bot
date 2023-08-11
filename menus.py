@@ -1,11 +1,16 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import user
+import task
+import logging
 
 
 def menu_button_press(data, user_id):
     data = str(data)
+    original_data = data
+    data = data[0:2]
     person = user.User(user_id)
     person.set_progress_point(int(data))
+    logging.warning(f"Person {person.user_id} is here: {person.progress_point}")
     if data == '3':
         return learn_menu()
     elif data == '4':
@@ -29,7 +34,7 @@ def menu_button_press(data, user_id):
     elif data == '56':
         return manage_learning_tracks_menu()
     elif data == '59':
-        return add_task()
+        return add_task(user_id, original_data)
     elif data == '63':
         return add_section_request()
     else:
@@ -126,7 +131,38 @@ def manage_tasks_menu():
     return f"Manage tasks menu / 52", reply_markup
 
 
-def add_task():
+def add_task(user_id, original_data):
+    logging.warning("We are here!")
+    person = user.get_user(user_id)
+    logging.warning(f"User {person.user_id} is here!")
+    if person.working_on is None or type(person.working_on) is not task.Task:
+        logging.warning("We are here!")
+        new_task = task.Task()
+        logging.warning("We are here!")
+        person.working_on = new_task
+    logging.warning("We are here!")
+    task_state = person.working_on
+    logging.warning("We are here")
+
+    if len(original_data) > 2:
+        task_state.section_id = int(original_data[2:5])
+        user.update_active_users(person)
+
+    if task_state.section_id is None:
+        sections = task.get_all_sections()
+        keyboard = []
+        for section in sections:
+            button = [InlineKeyboardButton(section[1], callback_data=f'59{str(section[0]).zfill(3)}')]
+            keyboard.append(button)
+        keyboard.append([InlineKeyboardButton("Back", callback_data="50")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        return f"Please select section for the task:", reply_markup
+    elif task_state.text is None:
+        return f"Please write task context for section {task_state.section_id}:", None
+    #elif task_state.picture_link is None:  //// Pictures in tasks!
+        #return f"Please send a picture"
+    elif task_state.question is None:
+        return f"Is the task is question and requires answer?"
     return f"Please write task context:", None
 
 
@@ -154,6 +190,7 @@ def manage_sections_menu():
 
 def add_section_request():
     return f"Please write new section name:", None
+
 
 def manage_tests_menu():
     keyboard = [

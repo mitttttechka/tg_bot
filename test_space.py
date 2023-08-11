@@ -1,2 +1,3 @@
-values = [[1, 2, 3], [4, 5, 6]]
-print(f'Values are: {tuple(values)}')
+n = '25'
+p = int(n[2:5])
+print(p)

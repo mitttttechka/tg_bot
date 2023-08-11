@@ -29,7 +29,8 @@ def handle_response(message) -> str:
         task.add_new_section(text)
         response = menus.menu_button_press(54, user_id)
         mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
-        return (mes, response[1])
+        return mes, response[1]
+
 
     return "Answer", None
 

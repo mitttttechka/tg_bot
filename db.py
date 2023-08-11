@@ -136,3 +136,9 @@ def add_new_section(text):
         f'(SELECT MAX(section_id) + 1 FROM {Connection.sections_table}), ' \
         f'\'{text}\')'
     send_query(q)
+
+
+def get_all_sections():
+    q = f'SELECT * FROM {Connection.sections_table}'
+    answer = send_query(q)
+    return answer

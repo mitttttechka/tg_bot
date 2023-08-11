@@ -6,7 +6,6 @@ active_users = []
 
 
 class User:
-    task = None
 
     def __init__(self, user_id):
         self.user_id = user_id
@@ -16,6 +15,7 @@ class User:
         self.class_id: int = int(info[3])
         self.subscribed: bool = info[4]
         self.progress_point: int = int(info[5])
+        self.working_on = None
 
     def get_user_info(self):
         logging.debug(self.user_id)
@@ -36,6 +36,10 @@ class User:
     def update_name(self, name):
         db.update_name(self.user_id, name)
         self.user_name = name
+        update_active_users(self)
+
+    def update_working_on(self, substance):
+        self.working_on = substance
         update_active_users(self)
 
 
