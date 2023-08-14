@@ -62,3 +62,4 @@ def find_user_in_active(user_id):
 def update_active_users(user):
     index = find_user_in_active(user.user_id)
     active_users[index] = user
+    # TODO add async update to database

@@ -24,13 +24,17 @@ def handle_response(message) -> str:
         person.set_progress_point(2)
         return menus.menu_button_press(2, user_id)
 
+    elif person.progress_point == 59:
+        logging.warning('progress_59')
+        response = menus.add_task(user_id, None, text)
+        return response
+
     elif person.progress_point == 63:
         logging.warning('progress_63')
         task.add_new_section(text)
         response = menus.menu_button_press(54, user_id)
         mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
         return mes, response[1]
-
 
     return "Answer", None
 

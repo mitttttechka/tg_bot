@@ -30,3 +30,7 @@ def get_all_sections():
     sections = db.get_all_sections()
     print(sections)
     return sections
+
+
+def add_task(task):
+    db.add_new_task(task)

@@ -74,6 +74,7 @@ def renew_database():
         f"INSERT INTO {Connection.sections_table} VALUES (0, 'default'); " \
         f"CREATE TABLE {Connection.task_table} (task_id integer, text text, picture_link text, " \
         f"question boolean, section_id integer); " \
+        f"INSERT INTO {Connection.task_table} VALUES (0, 'default', 'NONE', FALSE, 0); " \
         f"CREATE TABLE {Connection.statistics_table} (user_id bigint, test_id integer, correct boolean, " \
         f"dt timestamp DEFAULT current_timestamp); " \
         f"CREATE TABLE {Connection.task_answers_table} (task_id integer, answer text, correct boolean); " \
@@ -142,3 +143,14 @@ def get_all_sections():
     q = f'SELECT * FROM {Connection.sections_table}'
     answer = send_query(q)
     return answer
+
+
+def add_new_task(task):
+    q = f'INSERT INTO {Connection.task_table} VALUES (' \
+        f'(SELECT MAX(task_id) + 1 FROM {Connection.task_table}), ' \
+        f'\'{task.text}\', ' \
+        f'\'{task.picture_link}\', ' \
+        f'{task.question}, ' \
+        f'{task.section_id})'
+    logging.warning(q)
+    send_query(q)

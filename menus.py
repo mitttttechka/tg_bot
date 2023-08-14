@@ -8,9 +8,9 @@ def menu_button_press(data, user_id):
     data = str(data)
     original_data = data
     data = data[0:2]
-    person = user.User(user_id)
+    person = user.get_user(user_id)
     person.set_progress_point(int(data))
-    logging.warning(f"Person {person.user_id} is here: {person.progress_point}")
+    logging.warning(f"Person {person.user_id} is here: {person.progress_point}. Data: {original_data}")
     if data == '3':
         return learn_menu()
     elif data == '4':
@@ -130,24 +130,27 @@ def manage_tasks_menu():
     reply_markup = InlineKeyboardMarkup(keyboard)
     return f"Manage tasks menu / 52", reply_markup
 
-
-def add_task(user_id, original_data):
-    logging.warning("We are here!")
+# TODO refactor to multiple classes and to task file
+def add_task(user_id, user_state, *data):
     person = user.get_user(user_id)
-    logging.warning(f"User {person.user_id} is here!")
+    logging.warning(f"User {person.user_id} is here!. User state: {user_state}")
+
     if person.working_on is None or type(person.working_on) is not task.Task:
-        logging.warning("We are here!")
+        logging.warning(f"Why are we here")
         new_task = task.Task()
-        logging.warning("We are here!")
         person.working_on = new_task
-    logging.warning("We are here!")
     task_state = person.working_on
-    logging.warning("We are here")
+    logging.warning(f"Task_state: {task_state.section_id}")
 
-    if len(original_data) > 2:
-        task_state.section_id = int(original_data[2:5])
+    # Received section_id in message, asks for text
+    if user_state is not None and len(user_state) == 5:
+        task_state.section_id = int(user_state[2:5])
+        person.working_on = task_state
         user.update_active_users(person)
+        # TODO Change section_id to section name
+        return f"Please write task context for section {task_state.section_id}:", None
 
+    # Task state is empty, first question
     if task_state.section_id is None:
         sections = task.get_all_sections()
         keyboard = []
@@ -157,13 +160,51 @@ def add_task(user_id, original_data):
         keyboard.append([InlineKeyboardButton("Back", callback_data="50")])
         reply_markup = InlineKeyboardMarkup(keyboard)
         return f"Please select section for the task:", reply_markup
+
+    # Receiving text, asks for picture
     elif task_state.text is None:
-        return f"Please write task context for section {task_state.section_id}:", None
-    #elif task_state.picture_link is None:  //// Pictures in tasks!
-        #return f"Please send a picture"
+        logging.warning('Here')
+        task_state.text = data[0]
+        person.working_on = task_state
+        user.update_active_users(person)
+        # TODO make keyboard for picture adding
+        return f"Text \'{task_state.text}\' has been added. Do you want to add picture?", None
+
+    # TODO add picture support
+    elif task_state.picture_link is None:
+        if data[0].lower() == 'no':
+            task_state.picture_link = 'NONE'
+        else:
+            task_state.picture_link = data[0]
+        person.working_on = task_state
+        user.update_active_users(person)
+
+        keyboard = [
+            [InlineKeyboardButton("Yes", callback_data="591")],
+            [InlineKeyboardButton("No", callback_data="592")]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        return f"Is the task is question and requires answer?", reply_markup
+
+    # TODO add question type functional
     elif task_state.question is None:
-        return f"Is the task is question and requires answer?"
-    return f"Please write task context:", None
+        if user_state[2] == '1':
+            task_state.question = 'TRUE'
+        else:
+            task_state.question = 'FALSE'
+
+        person.working_on = None
+        user.update_active_users(person)
+
+        task.add_task(task_state)
+
+        response = menu_button_press(52, user_id)
+        mes = f"Task to section {task_state.section_id} was added.\nText: \'{task_state.text}\'" \
+               f"\nQuestion?: {task_state.question} \nNeeds picture?: {task_state.picture_link}\n{response[0]}"
+        return mes, response[1]
+
+    return "Not possible to add task", None
 
 
 def manage_classes_menu():

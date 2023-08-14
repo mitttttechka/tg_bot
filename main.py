@@ -31,8 +31,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await query.edit_message_text(text=response[0], reply_markup=response[1])
 
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('I\'ll help you')
+
 
 async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('This is custom command')
@@ -44,12 +46,15 @@ async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info(f'User ({update.message.chat.id}) says: "{text}"')
 
     response: (str, InlineKeyboardMarkup) = program.handle_response(update.message)
+    if type(response) is str:
+        response = (response, None)
 
     logging.info('Bot: ', response)
     await update.message.reply_text(response[0], reply_markup=response[1])
 
+
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.error(f'Update {update} caused error: {context.error}')
+    logging.error(f'ERROR: {context.error}')
 
 if __name__ == '__main__':
     db.connect()
