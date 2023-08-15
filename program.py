@@ -26,7 +26,7 @@ def handle_response(message) -> str:
 
     elif person.progress_point == 59:
         logging.warning('progress_59')
-        response = menus.add_task(user_id, None, text)
+        response = menus.add_task_menu(user_id, None, text)
         return response
 
     elif person.progress_point == 63:

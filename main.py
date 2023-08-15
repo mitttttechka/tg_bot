@@ -15,9 +15,11 @@ logging.basicConfig(format='%(levelname)s (%(asctime)s): %(message)s (Line: %(li
 
 logging.info('Starting up bot...')
 
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
     await update.message.reply_text('Welcome to the learning bot!')
+
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
@@ -56,6 +58,7 @@ async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.error(f'ERROR: {context.error}')
 
+
 if __name__ == '__main__':
     db.connect()
     db.renew_database()
@@ -70,5 +73,5 @@ if __name__ == '__main__':
 
     dp.run_polling(poll_interval=3)
 
-    #db.disconnect()
+    # db.disconnect()
 
