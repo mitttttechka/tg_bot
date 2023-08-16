@@ -56,6 +56,7 @@ def send_query(query):
     return answer
 
 
+# TODO for every class pending 0 and default values not to show them
 def renew_database():
     q = f"DROP TABLE {Connection.tests_table};" \
         f"DROP TABLE {Connection.test_rule_table};" \
@@ -79,9 +80,11 @@ def renew_database():
         f"dt timestamp DEFAULT current_timestamp); " \
         f"CREATE TABLE {Connection.task_answers_table} (task_id integer, answer text, correct boolean); " \
         f"CREATE TABLE {Connection.learning_track_table} (track_id integer, sort integer, task_id integer); " \
+        f"INSERT INTO {Connection.learning_track_table} VALUES (0, 0, 0); " \
         f"CREATE TABLE {Connection.students_table} (user_id bigint, track_id integer, sort integer); " \
         f"CREATE TABLE {Connection.user_table} (user_id bigint, user_name varchar(30), type integer DEFAULT 1, " \
-        f"class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0); " \
+        f"class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0, " \
+        f"current_position integer DEFAULT 0); " \
         f"CREATE TABLE {Connection.class_table} (class_id integer, class_name text);"
     send_query(q)
 
@@ -119,11 +122,16 @@ def get_user(user_id):
 
 def create_new_user(user_id):
     logging.debug(f'Creating for {user_id}')
-    insert(Connection.user_table, [(user_id, '', 1, 0, 'False', 0)])
+    insert(Connection.user_table, [(user_id, '', 1, 0, 'False', 0, 0)])
 
 
 def set_progress(user_id, progress_point):
     q = f'UPDATE {Connection.user_table} SET progress_point = {progress_point} WHERE user_id = {user_id}'
+    send_query(q)
+
+
+def set_current(user_id, current_state):
+    q = f'UPDATE {Connection.user_table} SET current_position = {current_state} WHERE user_id = {user_id}'
     send_query(q)
 
 
@@ -154,3 +162,15 @@ def add_new_task(task):
         f'{task.section_id})'
     logging.warning(q)
     send_query(q)
+
+
+def get_learning_tracks_list():
+    q = f'SELECT DISTINCT track_id FROM {Connection.learning_track_table}'
+    answer = send_query(q)
+    return answer
+
+
+def get_learning_track(track_id):
+    q = f'SELECT sort, task_id FROM {Connection.learning_track_table} WHERE track_id = {str(track_id)}'
+    answer = send_query(q)
+    return answer

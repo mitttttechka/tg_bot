@@ -10,27 +10,27 @@ def handle_response(message) -> str:
 
     person = user.get_user(user_id)
     logging.debug('Created person')
-    print(str(person.progress_point))
+    print(str(person.current_position))
 
     if "admin" in str(text):
         return menus.menu_button_press(50, user_id)
 
-    elif person.progress_point == 0:
-        person.set_progress_point(1)
+    elif person.current_position == 0:
+        person.set_current_position(1)
         return "Hi! What's your name?", None
 
-    elif person.progress_point == 1:
+    elif person.current_position == 1:
         person.update_name(text)
-        person.set_progress_point(2)
+        person.set_current_position(2)
         return menus.menu_button_press(2, user_id)
 
-    elif person.progress_point == 59:
-        logging.warning('progress_59')
+    elif person.current_position == 59:
+        logging.warning('current_59')
         response = menus.add_task_menu(user_id, None, text)
         return response
 
-    elif person.progress_point == 63:
-        logging.warning('progress_63')
+    elif person.current_position == 63:
+        logging.warning('current_63')
         task.add_new_section(text)
         response = menus.menu_button_press(54, user_id)
         mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'

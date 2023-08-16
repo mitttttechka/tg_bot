@@ -2,6 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import user
 import task
 import logging
+import learning_track
 
 
 def menu_button_press(data, user_id):
@@ -9,8 +10,8 @@ def menu_button_press(data, user_id):
     original_data = data
     data = data[0:2]
     person = user.get_user(user_id)
-    person.set_progress_point(int(data))
-    logging.warning(f"Person {person.user_id} is here: {person.progress_point}. Data: {original_data}")
+    person.set_current_position(int(data))
+    logging.warning(f"Person {person.user_id} is here: {person.current_position}. Data: {original_data}")
     if data == '3':
         return learn_menu()
     elif data == '4':
@@ -32,11 +33,13 @@ def menu_button_press(data, user_id):
     elif data == '55':
         return manage_tests_menu()
     elif data == '56':
-        return manage_learning_tracks_menu()
+        return learning_tracks_menu()
     elif data == '59':
         return add_task_menu(user_id, original_data)
     elif data == '63':
         return add_section_request()
+    elif data == '67':
+        return manage_learning_track_menu(user_id, original_data)
     else:
         return main_menu()
 
@@ -186,7 +189,7 @@ def manage_tests_menu():
     return f"Manage tests menu / 55", reply_markup
 
 
-def manage_learning_tracks_menu():
+def learning_tracks_menu():
     keyboard = [
         [InlineKeyboardButton("Add learning track", callback_data="66")],
         [InlineKeyboardButton("Manage learning track by id", callback_data="67")],
@@ -195,3 +198,16 @@ def manage_learning_tracks_menu():
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     return f"Manage learning tracks menu / 56", reply_markup
+
+
+def manage_learning_track_menu(user_id, user_state, *text):
+    reply = learning_track.manage_learning_track(user_id, user_state, text)
+    message = reply[0]
+    reply_markup = None
+    if reply[1] is not None:
+        keyboard = []
+        for button in reply[1]:
+            keyboard.append([InlineKeyboardButton(button[0], callback_data=button[1])])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+    return message, reply_markup
