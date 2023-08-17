@@ -36,6 +36,11 @@ def handle_response(message) -> str:
         mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
         return mes, response[1]
 
+    elif person.current_position == 67:
+        logging.warning('current_67')
+        response = menus.manage_learning_track_menu(user_id, None, text)
+        return response
+
     return "Answer", None
 
 

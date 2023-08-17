@@ -153,6 +153,12 @@ def get_all_sections():
     return answer
 
 
+def get_all_tasks():
+    q = f'SELECT * FROM {Connection.task_table}'
+    answer = send_query(q)
+    return answer
+
+
 def add_new_task(task):
     q = f'INSERT INTO {Connection.task_table} VALUES (' \
         f'(SELECT MAX(task_id) + 1 FROM {Connection.task_table}), ' \
@@ -162,6 +168,12 @@ def add_new_task(task):
         f'{task.section_id})'
     logging.warning(q)
     send_query(q)
+
+
+def get_task_by_id(task_id):
+    q = f'SELECT * FROM {Connection.task_table} WHERE task_id = {task_id}'
+    answer = send_query(q)
+    return answer
 
 
 def get_learning_tracks_list():

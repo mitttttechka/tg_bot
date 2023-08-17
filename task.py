@@ -20,13 +20,20 @@ class ChangeState:
 class Task:
 
     def __init__(self, *task_id):
-        if len(task_id) > 0:
+        if len(task_id) == 1:
             self.task_id = task_id
             info = self.get_task_info()
             self.text = info[1]
             self.picture_link = info[2]
             self.question = info[3]
             self.section_id: int = int(info[4])
+            self.state = ChangeState.normal
+        elif len(task_id) == 5:
+            self.task_id = task_id[0]
+            self.text = task_id[1]
+            self.picture_link = task_id[2]
+            self.question = task_id[3]
+            self.section_id = task_id[4]
             self.state = ChangeState.normal
         else:
             self.task_id = None
@@ -80,6 +87,25 @@ def get_all_sections():
     return sections
 
 
+def get_all_tasks():
+    tasks_array = db.get_all_tasks()
+    tasks = []
+    for task in tasks_array:
+        t = Task(task[0], task[1], task[2], task[3], task[4])
+        tasks.append(t)
+    return tasks
+
+
+def task_exists(task_id):
+    s_task = db.get_task_by_id(task_id)
+    if len(s_task) > 0:
+        return True
+    else:
+        return False
+
+
+# TODO make back buttons (either to menu, then empty current_task for users,
+# when pressing back, either to the previous point
 def add_task(user_id, user_state, *data):
     person = user.get_user(user_id)
     logging.debug(f"User {person.user_id} is here!. User state: {user_state}")
