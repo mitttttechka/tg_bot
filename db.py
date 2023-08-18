@@ -186,3 +186,15 @@ def get_learning_track(track_id):
     q = f'SELECT sort, task_id FROM {Connection.learning_track_table} WHERE track_id = {str(track_id)}'
     answer = send_query(q)
     return answer
+
+
+def update_learning_track(track_id, sort):
+    q = f'DELETE FROM {Connection.learning_track_table} WHERE track_id = {track_id}'
+    send_query(q)
+    if len(sort) > 0:
+        q = f'INSERT INTO {Connection.learning_track_table} VALUES '
+        for i in range(len(sort)):
+            q += f'({track_id}, {i}, {sort[i]}), '
+        q = q[0:len(q) - 2]
+        send_query(q)
+
