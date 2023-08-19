@@ -221,3 +221,14 @@ def adding_complete(task_state):
     mes = f"Task to section {task_state.section_id} was added.\nText: \'{task_state.text}\'" \
           f"\nQuestion?: {task_state.question} \nNeeds picture?: {task_state.picture_link}"
     return mes, None, True
+
+
+def all_tasks_message(*add_text):
+    tasks = get_all_tasks()
+    mes = ''
+    logging.debug(f'add_text length: {len(add_text)}')
+    if len(add_text) > 0:
+        mes += add_text[0]
+    for s_task in tasks:
+        mes += f'Task ID: {s_task.task_id}. Section: {s_task.section_id} Question: {s_task.question}\n{s_task.text}\n'
+    return mes

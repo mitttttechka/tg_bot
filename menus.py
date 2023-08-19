@@ -5,6 +5,7 @@ import logging
 import learning_track
 
 
+# TODO if user sends text when awaiting button press
 def menu_button_press(data, user_id):
     data = str(data)
     original_data = data
@@ -33,12 +34,14 @@ def menu_button_press(data, user_id):
     elif data == '55':
         return manage_tests_menu()
     elif data == '56':
+        user.get_user(user_id).update_working_on(None)
         return learning_tracks_menu()
     elif data == '59':
         return add_task_menu(user_id, original_data)
     elif data == '63':
         return add_section_request()
     elif data == '67':
+        #if user.get_user(user_id).update_working_on(None)
         return manage_learning_track_menu(user_id, original_data)
     else:
         return main_menu()
