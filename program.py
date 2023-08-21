@@ -2,9 +2,10 @@ import user
 import menus
 import task
 import logging
+import learning_track
 
 
-def handle_response(message) -> str:
+def handle_response(message):
     user_id = message.chat.id
     text = message.text
 
@@ -36,12 +37,15 @@ def handle_response(message) -> str:
         mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
         return mes, response[1]
 
+    elif person.current_position == 66:
+        logging.warning('current_66')
+        new_track_id = learning_track.add_learning_track(user_id, text)
+        response = menus.menu_button_press(67000 + int(new_track_id), user_id)
+        return response
+
     elif person.current_position == 67:
         logging.warning('current_67')
         response = menus.manage_learning_track_menu(user_id, None, text)
         return response
 
     return "Answer", None
-
-
-

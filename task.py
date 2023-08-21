@@ -148,7 +148,7 @@ def add_task(user_id, user_state, *data):
 
 
 def await_section_id(task_state, person):
-    task_state = task_state.change_state(ChangeState.awaiting_section_id, person)
+    task_state.change_state(ChangeState.awaiting_section_id, person)
     sections = get_all_sections()
     keyboard = []
     for section in sections:
@@ -197,7 +197,7 @@ def updating_picture(task_state, person, link):
 
 
 def await_question(task_state, person):
-    task_state = task_state.change_state(ChangeState.awaiting_question, person)
+    task_state.change_state(ChangeState.awaiting_question, person)
     keyboard = []
     yes_but = "Yes", "591"
     no_but = "No", "592"

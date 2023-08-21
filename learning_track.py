@@ -24,7 +24,8 @@ class ChangeState:
     update_add_task_end = 16,
     normal = 17,
     await_set_position = 18,
-    await_resort = 19
+    await_resort = 19,
+    view_current = 20
 
 
 class LearningTrack:
@@ -83,8 +84,14 @@ class LearningTrack:
         return self
 
 
-# TODO add several learning tracks. Maybe add table for learning_track - name
-# def add_learning_track():
+def add_learning_track(user_id, text):
+    new_track_id = db.add_new_learning_track(text)
+    person = user.get_user(user_id)
+    new_task = LearningTrack()
+    person.working_on = new_task
+    track_state = person.working_on
+    track_state.change_state(ChangeState.await_learn_track, person)
+    return new_track_id
 
 
 # TODO where list in message consider to change to buttons
@@ -110,6 +117,7 @@ def manage_learning_track(user_id, user_state, *data):
         if user_state[2] == '1':
             return await_change_current(track_state, person)
         elif user_state[2] == '2':
+            track_state.change_sort({}, person)
             return await_new_sort(track_state, person)
 
     if track_state.state == ChangeState.await_change_current:
@@ -121,7 +129,10 @@ def manage_learning_track(user_id, user_state, *data):
             return await_resort_existing(track_state, person)
 
     if track_state.state == ChangeState.await_add_task_middle:
-        track_state = update_add_task_middle(track_state, person, data[0][0])
+        result = update_add_task_middle(track_state, person, data[0][0])
+        if type(result) is not LearningTrack:
+            return result
+        track_state = result
         return await_set_position(track_state, person)
 
     if track_state.state == ChangeState.await_set_position:
@@ -136,7 +147,6 @@ def manage_learning_track(user_id, user_state, *data):
         text = 'The task was successfully removed. New sort:\n'
         return await_change_current(track_state, person, text)
 
-    # TODO can optimize without twice db usage
     if track_state.state == ChangeState.await_resort_existing:
         track_state = update_resort_existing(track_state, person, data[0][0])
         track_state = update_remove_task(track_state, person, data[0][0])
@@ -150,28 +160,61 @@ def manage_learning_track(user_id, user_state, *data):
         db.update_learning_track(track_state.track_id, track_state.get_sort())
         text = 'The task was successfully moved. New sort:\n'
         return await_change_current(track_state, person, text)
-    # TODO continue to manage learning track
 
     if track_state.state == ChangeState.await_new_sort:
-        return None
+        if user_state is not None and len(user_state) == 4:
+            if user_state[3] == '1':
+                return view_current_sort(track_state, person)
+            elif user_state[3] == '2':
+                db.update_learning_track(track_state.track_id, track_state.get_sort())
+                text = 'The new sorting was successfully saved.\n'
+                return await_current_sort(track_state, person, text)
+            else:
+                return await_change_current(track_state, person)
+        if data is not None:
+            track_state, add_text = update_new_sort(track_state, person, data[0][0])
+            return await_new_sort(track_state, person, add_text)
+
+    if track_state.state == ChangeState.view_current:
+        return await_new_sort(track_state, person)
+
     return None
 
 
-# TODO additional message are you sure
-def await_new_sort(track_state, person):
-    track_state = track_state.change_state(ChangeState.await_new_sort, person)
-    add_text = 'Write Task ID to add to the end of the new sorting\n'
-    mes = task.all_tasks_message(add_text)
-    track_state.change_mes(mes, person)
-    keyboard = [('View current new sorting', '6721'),
-                ('Save sorting (OLD SORTING WILL BE DELETED)', '6722'),
-                ("Back (PROGRESS WILL BE LOST)", "56")]
+def view_current_sort(track_state, person):
+    track_state = track_state.change_state(ChangeState.view_current, person)
+    mes = track_sort_message(track_state, '')
+    keyboard = [('Back to editing', '672')]
     return mes, keyboard
 
 
+# TODO additional message are you sure
+def await_new_sort(track_state, person, *add_text):
+    track_state = track_state.change_state(ChangeState.await_new_sort, person)
+    text = ''
+    if len(add_text) > 0:
+        text += add_text[0]
+    text += 'Write Task ID to add to the end of the new sorting\n'
+    mes = task.all_tasks_message(text)
+    track_state.change_mes(mes, person)
+    keyboard = [('View current new sorting', '6721'),
+                ('Save sorting (OLD SORTING WILL BE DELETED)', '6722'),
+                ("Back (PROGRESS WILL BE LOST)", "6723")]
+    return mes, keyboard
+
+
+# TODO opportunity to input several tasks
 def update_new_sort(track_state, person, text):
-    track_state = update_add_task_middle(track_state, person, text)
-    update_set_position(track_state, person, len(track_state.sorting) + 1)
+    answer = update_add_task_middle(track_state, person, text)
+    if type(answer) is not LearningTrack:
+        return track_state, 'Incorrect Task ID. Please try again\n'
+    track_state = answer
+    if track_state.sorting is None:
+        sort_id = 0
+    else:
+        sort_id = len(track_state.sorting)
+    track_state = update_set_position(track_state, person, sort_id + 1)
+    return track_state, 'Task was added to the new sorting.\n'
 
 
 def await_learning_track(track_state, person):
@@ -179,7 +222,8 @@ def await_learning_track(track_state, person):
     tracks_list = get_all_learning_tracks()
     keyboard = []
     for track in tracks_list:
-        button = track[0], f'67{str(track[0]).zfill(3)}'
+        button = track[1], f'67{str(track[0]).zfill(3)}'
+        # button = track[0], f'67{str(track[0]).zfill(3)}'
         keyboard.append(button)
     keyboard.append(("Back", "56"))
 
@@ -198,19 +242,28 @@ def update_learn_track(track_state, person, user_state):
     return track_state
 
 
-def await_current_sort(track_state, person):
+# TODO add opportunity to delete track
+def await_current_sort(track_state, person, *add_text):
     track_state = track_state.change_state(ChangeState.await_current_sort, person)
-    sort = track_state.get_sort()
-    mes = 'Sort: Task ID\n'
-    for i in range(len(sort)):
-        mes += f'{i}: task {sort[i]}\n'
-    if len(mes) == 0:
-        mes = f'No tasks in the learning track yet.'
+    mes = track_sort_message(track_state, add_text)
     track_state.change_mes(mes, person)
     keyboard = [('Change current sort', '671'),
                 ('Make new sort from zero', '672'),
                 ("Back", "56")]
     return mes, keyboard
+
+
+def track_sort_message(track_state, add_text):
+    sort = track_state.get_sort()
+    mes = ''
+    if len(add_text) > 0:
+        mes += add_text[0]
+    mes += 'Sort: Task ID\n'
+    for i in range(len(sort)):
+        mes += f'{i}: task {sort[i]}\n'
+    if len(mes) == 0:
+        mes = f'No tasks in the learning track yet.'
+    return mes
 
 
 def await_change_current(track_state, person, *add_text):
@@ -317,18 +370,13 @@ def update_set_position(track_state, person, text):
     for i in range(position, len(sort)):
         new_sort[i + 1] = sort[i]
 
-    return update_sort(track_state, person, new_sort)
+    track_state = update_sort(track_state, person, new_sort)
+    return track_state
 
 
 def update_sort(track_state, person, new_sort):
-    mes = 'Sort: Task ID'
-    for i in range(len(new_sort)):
-        mes += f'{i}: task {new_sort[i]}\n'
-    if len(mes) == 0:
-        mes = 'No tasks in the learning track yet.'
-    track_state = track_state.change_mes(mes, person)
     track_state = track_state.change_sort(new_sort, person)
-
+    track_state = track_state.change_mes(track_sort_message(track_state, ''), person)
     return track_state
 
 
@@ -348,3 +396,10 @@ def update_resort_existing(track_state, person, text):
 
     track_state = track_state.change_task(task_id, person)
     return track_state
+
+
+def get_name_for_id(track_id):
+    name = db.get_learning_track_name(track_id)
+    if len(name) > 0:
+        return name[0][0]
+    return None

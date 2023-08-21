@@ -14,6 +14,7 @@ class Connection:
     learning_track_table = 'learning_track'
     students_table = 'students'
     class_table = 'class'
+    track_id_name_table = 'track_id_name'
 
 
 def connect():
@@ -69,6 +70,7 @@ def renew_database():
         f"DROP TABLE {Connection.students_table};" \
         f"DROP TABLE {Connection.user_table};" \
         f"DROP TABLE {Connection.class_table};" \
+        f"DROP TABLE {Connection.track_id_name_table};" \
         f"CREATE TABLE {Connection.tests_table} (test_id integer, task_id integer, sort integer); " \
         f"CREATE TABLE {Connection.test_rule_table} (track_id integer, section_id integer," \
         f" number_tasks integer, sort integer); " \
@@ -86,6 +88,8 @@ def renew_database():
         f"INSERT INTO {Connection.learning_track_table} VALUES (0, 0, 0); " \
         f"INSERT INTO {Connection.learning_track_table} VALUES (0, 1, 1); " \
         f"INSERT INTO {Connection.learning_track_table} VALUES (0, 2, 2); " \
+        f"CREATE TABLE {Connection.track_id_name_table} (track_id integer, track_name varchar(30)); " \
+        f"INSERT INTO {Connection.track_id_name_table} VALUES (0, \'default track\'); " \
         f"CREATE TABLE {Connection.students_table} (user_id bigint, track_id integer, sort integer); " \
         f"CREATE TABLE {Connection.user_table} (user_id bigint, user_name varchar(30), type integer DEFAULT 1, " \
         f"class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0, " \
@@ -182,7 +186,8 @@ def get_task_by_id(task_id):
 
 
 def get_learning_tracks_list():
-    q = f'SELECT DISTINCT track_id FROM {Connection.learning_track_table}'
+    q = f'SELECT track_id, track_name FROM {Connection.track_id_name_table}'
+    # q = f'SELECT DISTINCT track_id FROM {Connection.learning_track_table}'
     answer = send_query(q)
     return answer
 
@@ -203,3 +208,17 @@ def update_learning_track(track_id, sort):
         q = q[0:len(q) - 2]
         send_query(q)
 
+
+def get_learning_track_name(track_id):
+    q = f'SELECT track_name FROM {Connection.track_id_name_table} WHERE track_id = {str(track_id)}'
+    answer = send_query(q)
+    return answer
+
+
+def add_new_learning_track(track_name):
+    q = f'SELECT MAX(track_id) FROM {Connection.track_id_name_table}'
+    answer = send_query(q)
+    track_id = int(answer[0][0]) + 1
+    q = f'INSERT INTO {Connection.track_id_name_table} VALUES ({track_id}, \'{track_name}\')'
+    send_query(q)
+    return track_id
