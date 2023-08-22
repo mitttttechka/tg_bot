@@ -1,8 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-import user
-import task
 import logging
-import learning_track
+from instances import learning_track, question, user, task
 
 
 # TODO if user sends text when awaiting button press
@@ -38,6 +36,8 @@ def menu_button_press(data, user_id):
         user.get_user(user_id).update_working_on(None)
         return learning_tracks_menu()
     elif data == '59':
+        if original_data == '591':
+            return add_question_menu(user_id, original_data)
         return add_task_menu(user_id, original_data)
     elif data == '63':
         return add_section_request()
@@ -124,15 +124,20 @@ def manage_tasks_menu():
 def add_task_menu(user_id, user_state, *text):
     reply = task.add_task(user_id, user_state, text)
     message = reply[0]
-    reply_markup = None
-    if reply[1] is not None:
-        reply_markup = array_to_keyboard(reply[1])
+    reply_markup = array_to_keyboard(reply[1])
 
     if len(reply) == 3:
         complete = menu_button_press(52, user_id)
         message += f'\n{complete[0]}'
         reply_markup = complete[1]
 
+    return message, reply_markup
+
+
+def add_question_menu(user_id, user_state, *text):
+    reply = question.add_question(user_id, user_state, text)
+    message = reply[0]
+    reply_markup = array_to_keyboard(reply[1])
     return message, reply_markup
 
 
@@ -183,13 +188,13 @@ def add_learning_track_menu():
 def manage_learning_track_menu(user_id, user_state, *text):
     reply = learning_track.manage_learning_track(user_id, user_state, text)
     message = reply[0]
-    reply_markup = None
-    if reply[1] is not None:
-        reply_markup = array_to_keyboard(reply[1])
+    reply_markup = array_to_keyboard(reply[1])
     return message, reply_markup
 
 
 def array_to_keyboard(array):
+    if array is None:
+        return None
     keyboard = []
     for button in array:
         keyboard.append([InlineKeyboardButton(button[0], callback_data = button[1])])

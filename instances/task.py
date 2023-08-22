@@ -1,6 +1,6 @@
 import logging
-import db
-import user
+from database import db
+from instances import user
 
 
 class ChangeState:
@@ -14,7 +14,9 @@ class ChangeState:
     updating_picture = 8,
     awaiting_question = 9,
     updating_question = 10,
-    normal = 11
+    normal = 11,
+    to_submit = 12,
+    create_question = 13
 
 
 class Task:
@@ -140,11 +142,19 @@ def add_task(user_id, user_state, *data):
     # TODO add question type functional
     elif task_state.state == ChangeState.awaiting_question:
         task_state = update_question(task_state, person, user_state[2])
+        if task_state.question == 'TRUE':
+            task_state.change_state(ChangeState.create_question, person)
+            return await_create_question(task_state, person) #here or from menu?
+        else:
+            task_state.change_state(ChangeState.to_submit, person)
 
-    db.add_new_task(task_state)
-    person.working_on = None
-    user.update_active_users(person)
-    return adding_complete(task_state)
+    if task_state.state == ChangeState.to_submit:
+        db.add_new_task(task_state)
+        person.working_on = None
+        user.update_active_users(person)
+        return adding_complete(task_state)
+
+    return None
 
 
 def await_section_id(task_state, person):

@@ -1,13 +1,11 @@
-from typing import Final
 import logging
 from telegram.ext import *
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardMarkup
 
 import keys
-import db
 import program
 import menus
-
+from database import db, db_connection
 
 logging.basicConfig(format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])',
                     datefmt='%d/%m/%Y %I:%M:%S %p',
@@ -43,16 +41,13 @@ async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text: str = update.message.text
+    #response: (str, InlineKeyboardMarkup) = program.handle_response(update.message)
+    #if type(response) is str:
+    #    response = (response, None)
 
-    logging.info(f'User ({update.message.chat.id}) says: "{text}"')
-
-    response: (str, InlineKeyboardMarkup) = program.handle_response(update.message)
-    if type(response) is str:
-        response = (response, None)
-
-    logging.info('Bot: ', response)
-    await update.message.reply_text(response[0], reply_markup=response[1])
+    #logging.info('Bot: ', response)
+    #await update.message.reply_text(response[0], reply_markup=response[1])
+    await program.handle_response_connection(update.message)
 
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,8 +55,10 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    db.connect()
+    db_connection.connect()
+
     db.renew_database()
+
     dp = Application.builder().token(keys.token).build()
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('help', help_command))
@@ -73,5 +70,4 @@ if __name__ == '__main__':
 
     dp.run_polling(poll_interval=3)
 
-    # db.disconnect()
 

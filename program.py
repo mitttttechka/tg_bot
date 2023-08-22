@@ -1,8 +1,16 @@
-import user
+from telegram import InlineKeyboardMarkup
+
 import menus
-import task
 import logging
-import learning_track
+from instances import learning_track, user, task
+
+
+def handle_response_connection(message):
+    response: (str, InlineKeyboardMarkup) = handle_response(message)
+    if type(response) is str:
+       response = (response, None)
+    logging.info('Bot: ', response)
+    message.reply_text(response[0], reply_markup=response[1])
 
 
 def handle_response(message):

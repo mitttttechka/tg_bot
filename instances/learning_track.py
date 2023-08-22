@@ -1,5 +1,5 @@
 import logging
-import db
+from database import db
 import user
 import task
 
@@ -53,35 +53,20 @@ class LearningTrack:
             self.sorting = sorted_dict
         return self.sorting
 
-    def change_state(self, state, person):
+    def change_state(self, state):
         self.state = state
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_track_id(self, track_id, person):
+    def change_track_id(self, track_id):
         self.track_id = track_id
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_mes(self, mes, person):
+    def change_mes(self, mes):
         self.sort_mes = mes
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_task(self, task_id, person):
+    def change_task(self, task_id):
         self.current_task = task_id
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_sort(self, new_sort, person):
+    def change_sort(self, new_sort):
         self.sorting = new_sort
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
 
 def add_learning_track(user_id, text):
@@ -90,7 +75,7 @@ def add_learning_track(user_id, text):
     new_task = LearningTrack()
     person.working_on = new_task
     track_state = person.working_on
-    track_state.change_state(ChangeState.await_learn_track, person)
+    track_state.change_state(ChangeState.await_learn_track)
     return new_track_id
 
 
@@ -107,96 +92,96 @@ def manage_learning_track(user_id, user_state, *data):
     track_state = person.working_on
 
     if track_state.state == ChangeState.empty:
-        return await_learning_track(track_state, person)
+        return await_learning_track(track_state)
 
     if track_state.state == ChangeState.await_learn_track:
-        track_state = update_learn_track(track_state, person, user_state)
-        return await_current_sort(track_state, person)
+        track_state = update_learn_track(track_state, user_state)
+        return await_current_sort(track_state)
 
     if track_state.state == ChangeState.await_current_sort:
         if user_state[2] == '1':
-            return await_change_current(track_state, person)
+            return await_change_current(track_state)
         elif user_state[2] == '2':
-            track_state.change_sort({}, person)
-            return await_new_sort(track_state, person)
+            track_state.change_sort({})
+            return await_new_sort(track_state)
 
     if track_state.state == ChangeState.await_change_current:
         if user_state[2] == '3':
-            return await_add_task_middle(track_state, person)
+            return await_add_task_middle(track_state)
         elif user_state[2] == '4':
-            return await_remove_task(track_state, person)
+            return await_remove_task(track_state)
         elif user_state[2] == '5':
-            return await_resort_existing(track_state, person)
+            return await_resort_existing(track_state)
 
     if track_state.state == ChangeState.await_add_task_middle:
-        result = update_add_task_middle(track_state, person, data[0][0])
+        result = update_add_task_middle(track_state, data[0][0])
         if type(result) is not LearningTrack:
             return result
         track_state = result
-        return await_set_position(track_state, person)
+        return await_set_position(track_state)
 
     if track_state.state == ChangeState.await_set_position:
-        track_state = update_set_position(track_state, person, data[0][0])
+        track_state = update_set_position(track_state, data[0][0])
         db.update_learning_track(track_state.track_id, track_state.get_sort())
         text = 'The task was successfully added. New sort:\n'
-        return await_change_current(track_state, person, text)
+        return await_change_current(track_state, text)
 
     if track_state.state == ChangeState.await_remove_task:
-        track_state = update_remove_task(track_state, person, data[0][0])
+        track_state = update_remove_task(track_state, data[0][0])
         db.update_learning_track(track_state.track_id, track_state.get_sort())
         text = 'The task was successfully removed. New sort:\n'
-        return await_change_current(track_state, person, text)
+        return await_change_current(track_state, text)
 
     if track_state.state == ChangeState.await_resort_existing:
-        track_state = update_resort_existing(track_state, person, data[0][0])
-        track_state = update_remove_task(track_state, person, data[0][0])
+        track_state = update_resort_existing(track_state, data[0][0])
+        track_state = update_remove_task(track_state, data[0][0])
         # db.update_learning_track(track_state.track_id, track_state.get_sort())
-        key = await_set_position(track_state, person)
-        track_state.change_state(ChangeState.await_resort, person)
+        key = await_set_position(track_state)
+        track_state.change_state(ChangeState.await_resort)
         return key
 
     if track_state.state == ChangeState.await_resort:
-        track_state = update_set_position(track_state, person, data[0][0])
+        track_state = update_set_position(track_state, data[0][0])
         db.update_learning_track(track_state.track_id, track_state.get_sort())
         text = 'The task was successfully moved. New sort:\n'
-        return await_change_current(track_state, person, text)
+        return await_change_current(track_state, text)
 
     if track_state.state == ChangeState.await_new_sort:
         if user_state is not None and len(user_state) == 4:
             if user_state[3] == '1':
-                return view_current_sort(track_state, person)
+                return view_current_sort(track_state)
             elif user_state[3] == '2':
                 db.update_learning_track(track_state.track_id, track_state.get_sort())
                 text = 'The new sorting was successfully saved.\n'
-                return await_current_sort(track_state, person, text)
+                return await_current_sort(track_state, text)
             else:
-                return await_change_current(track_state, person)
+                return await_change_current(track_state)
         if data is not None:
-            track_state, add_text = update_new_sort(track_state, person, data[0][0])
-            return await_new_sort(track_state, person, add_text)
+            track_state, add_text = update_new_sort(track_state, data[0][0])
+            return await_new_sort(track_state, add_text)
 
     if track_state.state == ChangeState.view_current:
-        return await_new_sort(track_state, person)
+        return await_new_sort(track_state)
 
     return None
 
 
-def view_current_sort(track_state, person):
-    track_state = track_state.change_state(ChangeState.view_current, person)
+def view_current_sort(track_state):
+    track_state.change_state(ChangeState.view_current)
     mes = track_sort_message(track_state, '')
     keyboard = [('Back to editing', '672')]
     return mes, keyboard
 
 
 # TODO additional message are you sure
-def await_new_sort(track_state, person, *add_text):
-    track_state = track_state.change_state(ChangeState.await_new_sort, person)
+def await_new_sort(track_state, *add_text):
+    track_state.change_state(ChangeState.await_new_sort)
     text = ''
     if len(add_text) > 0:
         text += add_text[0]
     text += 'Write Task ID to add to the end of the new sorting\n'
     mes = task.all_tasks_message(text)
-    track_state.change_mes(mes, person)
+    track_state.change_mes(mes)
     keyboard = [('View current new sorting', '6721'),
                 ('Save sorting (OLD SORTING WILL BE DELETED)', '6722'),
                 ("Back (PROGRESS WILL BE LOST)", "6723")]
@@ -217,8 +202,8 @@ def update_new_sort(track_state, person, text):
     return track_state, 'Task was added to the new sorting.\n'
 
 
-def await_learning_track(track_state, person):
-    track_state.change_state(ChangeState.await_learn_track, person)
+def await_learning_track(track_state):
+    track_state.change_state(ChangeState.await_learn_track)
     tracks_list = get_all_learning_tracks()
     keyboard = []
     for track in tracks_list:
@@ -236,17 +221,17 @@ def get_all_learning_tracks():
     return tracks_list
 
 
-def update_learn_track(track_state, person, user_state):
-    track_state = track_state.change_state(ChangeState.update_learn_track, person)
-    track_state = track_state.change_track_id(int(user_state[2:5]), person)
+def update_learn_track(track_state, user_state):
+    track_state.change_state(ChangeState.update_learn_track)
+    track_state.change_track_id(int(user_state[2:5]))
     return track_state
 
 
 # TODO add opportunity to delete track
-def await_current_sort(track_state, person, *add_text):
-    track_state = track_state.change_state(ChangeState.await_current_sort, person)
+def await_current_sort(track_state, *add_text):
+    track_state.change_state(ChangeState.await_current_sort)
     mes = track_sort_message(track_state, add_text)
-    track_state.change_mes(mes, person)
+    track_state.change_mes(mes)
     keyboard = [('Change current sort', '671'),
                 ('Make new sort from zero', '672'),
                 ("Back", "56")]
@@ -266,8 +251,8 @@ def track_sort_message(track_state, add_text):
     return mes
 
 
-def await_change_current(track_state, person, *add_text):
-    track_state = track_state.change_state(ChangeState.await_change_current, person)
+def await_change_current(track_state, *add_text):
+    track_state.change_state(ChangeState.await_change_current)
     mes = ''
     if len(add_text) > 0:
         mes += add_text[0]
@@ -279,8 +264,8 @@ def await_change_current(track_state, person, *add_text):
     return mes, keyboard
 
 
-def await_add_task_middle(track_state, person, *add_text):
-    track_state.change_state(ChangeState.await_add_task_middle, person)
+def await_add_task_middle(track_state, *add_text):
+    track_state.change_state(ChangeState.await_add_task_middle)
     mes = ''
     if len(add_text) > 0:
         mes += add_text[0]
@@ -289,8 +274,8 @@ def await_add_task_middle(track_state, person, *add_text):
     return mes, None
 
 
-def await_remove_task(track_state, person, *add_text):
-    track_state = track_state.change_state(ChangeState.await_remove_task, person)
+def await_remove_task(track_state, *add_text):
+    track_state.change_state(ChangeState.await_remove_task)
     mes = ''
     if len(add_text) > 0:
         if type(add_text[0]) is str:
@@ -300,27 +285,27 @@ def await_remove_task(track_state, person, *add_text):
     return mes, None
 
 
-def update_add_task_middle(track_state, person, text):
+def update_add_task_middle(track_state, text):
     try:
         task_id = int(text)
     except:
-        return await_add_task_middle(track_state, person, 'Incorrect Task ID. Please try again\n')
+        return await_add_task_middle(track_state, 'Incorrect Task ID. Please try again\n')
     if not task.task_exists(task_id):
-        return await_add_task_middle(track_state, person, 'Task ID doesn\'t exist. Please try again\n')
-    track_state = track_state.change_state(ChangeState.update_add_task_middle, person)
-    track_state = track_state.change_task(task_id, person)
+        return await_add_task_middle(track_state, 'Task ID doesn\'t exist. Please try again\n')
+    track_state.change_state(ChangeState.update_add_task_middle)
+    track_state.change_task(task_id)
     return track_state
 
 
-def update_remove_task(track_state, person, text):
+def update_remove_task(track_state, text):
     try:
         position = int(text)
     except:
-        return await_remove_task(track_state, person, 'Incorrect position. Please try again\n')
+        return await_remove_task(track_state, 'Incorrect position. Please try again\n')
 
     new_sort = remove_position_from_sort(track_state, position)
 
-    return update_sort(track_state, person, new_sort)
+    return update_sort(track_state, new_sort)
 
 
 def remove_position_from_sort(track_state, position):
@@ -340,8 +325,8 @@ def remove_position_from_sort(track_state, position):
     return new_sort
 
 
-def await_set_position(track_state, person, *add_text):
-    track_state = track_state.change_state(ChangeState.await_set_position, person)
+def await_set_position(track_state, *add_text):
+    track_state.change_state(ChangeState.await_set_position)
     mes = ''
     if len(add_text) > 0:
         mes += add_text[0]
@@ -350,11 +335,11 @@ def await_set_position(track_state, person, *add_text):
     return mes, None
 
 
-def update_set_position(track_state, person, text):
+def update_set_position(track_state, text):
     try:
         position = int(text)
     except:
-        return await_add_task_middle(track_state, person, 'Incorrect position. Please try again\n')
+        return await_add_task_middle(track_state, 'Incorrect position. Please try again\n')
 
     sort = track_state.get_sort()
     new_sort = {}
@@ -370,31 +355,31 @@ def update_set_position(track_state, person, text):
     for i in range(position, len(sort)):
         new_sort[i + 1] = sort[i]
 
-    track_state = update_sort(track_state, person, new_sort)
+    track_state = update_sort(track_state, new_sort)
     return track_state
 
 
-def update_sort(track_state, person, new_sort):
-    track_state = track_state.change_sort(new_sort, person)
-    track_state = track_state.change_mes(track_sort_message(track_state, ''), person)
+def update_sort(track_state, new_sort):
+    track_state.change_sort(new_sort)
+    track_state.change_mes(track_sort_message(track_state, ''))
     return track_state
 
 
-def await_resort_existing(track_state, person, *add_text):
-    answer = await_remove_task(track_state, person, add_text)
-    track_state.change_state(ChangeState.await_resort_existing, person)
+def await_resort_existing(track_state, *add_text):
+    answer = await_remove_task(track_state, add_text)
+    track_state.change_state(ChangeState.await_resort_existing)
     return answer
 
 
-def update_resort_existing(track_state, person, text):
+def update_resort_existing(track_state, text):
     try:
         position = int(text)
     except:
-        return await_resort_existing(track_state, person, 'Incorrect position. Please try again\n')
+        return await_resort_existing(track_state, 'Incorrect position. Please try again\n')
     sort = track_state.get_sort()
     task_id = sort[position]
 
-    track_state = track_state.change_task(task_id, person)
+    track_state.change_task(task_id)
     return track_state
 
 
