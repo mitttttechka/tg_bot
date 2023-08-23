@@ -1,4 +1,3 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import logging
 from instances import learning_track, question, user, task
 
@@ -36,16 +35,15 @@ def menu_button_press(data, user_id):
         user.get_user(user_id).update_working_on(None)
         return learning_tracks_menu()
     elif data == '59':
-        if original_data == '591':
-            return add_question_menu(user_id, original_data)
         return add_task_menu(user_id, original_data)
     elif data == '63':
         return add_section_request()
     elif data == '66':
         return add_learning_track_menu()
     elif data == '67':
-        # if user.get_user(user_id).update_working_on(None)
         return manage_learning_track_menu(user_id, original_data)
+    elif data == '70':
+        return add_question_menu(user_id, original_data)
     else:
         return main_menu()
 
@@ -55,24 +53,21 @@ def main_menu():
                 ["Practice", "4"],
                 ["Tests", "5"],
                 ["Profile", "6"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Check out the menu!", reply_markup
+    return f"Check out the menu!", keyboard
 
 
 def learn_menu():
     keyboard = [["Continue learning", "7"],
                 ["Jump to the theme", "8"],
                 ["Back", "2"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Let's learn something new!", reply_markup
+    return f"Let's learn something new!", keyboard
 
 
 def practice_menu():
     keyboard = [["Practice the theme", "9"],
                 ["Most often errors", "10"],
                 ["Back", "2"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Practice makes perfect!", reply_markup
+    return f"Practice makes perfect!", keyboard
 
 
 def tests_menu():
@@ -80,8 +75,7 @@ def tests_menu():
                 ["Tests by the themes", "12"],
                 ["Assigned tests", "13"],
                 ["Back", "2"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Don't be afraid!", reply_markup
+    return f"Don't be afraid!", keyboard
 
 
 def profile_menu():
@@ -89,9 +83,7 @@ def profile_menu():
                 ["Class", "15"],
                 ["Statistics", "16"],
                 ["Back", "2"]]
-
-    reply_markup = array_to_keyboard(keyboard)
-    return f"It's all about you!", reply_markup
+    return f"It's all about you!", keyboard
 
 
 def admin_menu():
@@ -101,62 +93,58 @@ def admin_menu():
                 ["Manage sections", "54"],
                 ["Manage tests", "55"],
                 ["Manage learning_tracks", "56"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Admin menu / 50", reply_markup
+    return f"Admin menu / 50", keyboard
 
 
 def manage_users_menu():
     keyboard = [["Delete user by id", "57"],
                 ["Change user by id", "58"],
                 ["Back", "50"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Manage users menu / 51", reply_markup
+    return f"Manage users menu / 51", keyboard
 
 
 def manage_tasks_menu():
     keyboard = [["Add task", "59"],
                 ["Find task by id", "60"],
                 ["Back", "50"]]
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Manage tasks menu / 52", reply_markup
+    return f"Manage tasks menu / 52", keyboard
 
 
 def add_task_menu(user_id, user_state, *text):
     reply = task.add_task(user_id, user_state, text)
     message = reply[0]
-    reply_markup = array_to_keyboard(reply[1])
-
+    keyboard = reply[1]
     if len(reply) == 3:
         complete = menu_button_press(52, user_id)
         message += f'\n{complete[0]}'
-        reply_markup = complete[1]
+        keyboard = complete[1]
 
-    return message, reply_markup
+    return message, keyboard
 
 
 def add_question_menu(user_id, user_state, *text):
     reply = question.add_question(user_id, user_state, text)
     message = reply[0]
-    reply_markup = array_to_keyboard(reply[1])
-    return message, reply_markup
+    keyboard = reply[1]
+    if len(reply) == 3:
+        complete = menu_button_press(52, user_id)
+        message += f'\n{complete[0]}'
+        keyboard = complete[1]
+    return message, keyboard
 
 
 def manage_classes_menu():
     keyboard = [["Add class", "61"],
                 ["Find class by id", "62"],
                 ["Back", "50"]]
-
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Manage classes menu / 53", reply_markup
+    return f"Manage classes menu / 53", keyboard
 
 
 def manage_sections_menu():
     keyboard = [["Add section", "63"],
                 ["Find section by id", "64"],
                 ["Back", "50"]]
-
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Manage sections menu / 54", reply_markup
+    return f"Manage sections menu / 54", keyboard
 
 
 def add_section_request():
@@ -167,18 +155,14 @@ def manage_tests_menu():
     keyboard = [["Change test rules", "65"],
                 ["Manage prescripted tests by id", "66"],
                 ["Back", "50"]]
-
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Manage tests menu / 55", reply_markup
+    return f"Manage tests menu / 55", keyboard
 
 
 def learning_tracks_menu():
     keyboard = [["Add learning track", "66"],
                 ["Manage learning track by id", "67"],
                 ["Back", "50"]]
-
-    reply_markup = array_to_keyboard(keyboard)
-    return f"Manage learning tracks menu / 56", reply_markup
+    return f"Manage learning tracks menu / 56", keyboard
 
 
 def add_learning_track_menu():
@@ -187,16 +171,7 @@ def add_learning_track_menu():
 
 def manage_learning_track_menu(user_id, user_state, *text):
     reply = learning_track.manage_learning_track(user_id, user_state, text)
-    message = reply[0]
-    reply_markup = array_to_keyboard(reply[1])
-    return message, reply_markup
+    return reply[0], reply[1]
 
 
-def array_to_keyboard(array):
-    if array is None:
-        return None
-    keyboard = []
-    for button in array:
-        keyboard.append([InlineKeyboardButton(button[0], callback_data = button[1])])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    return reply_markup
+

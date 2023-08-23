@@ -1,10 +1,9 @@
 import logging
 from telegram.ext import *
-from telegram import Update, InlineKeyboardMarkup
+from telegram import Update
 
 import keys
 import program
-import menus
 from database import db, db_connection
 
 logging.basicConfig(format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])',
@@ -22,14 +21,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
-
-    # CallbackQueries need to be answered, even if no notification to the user is needed
-    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     await query.answer()
-
-    response: (str, InlineKeyboardMarkup) = menus.menu_button_press(query.data, query.message.chat.id)
-
-    await query.edit_message_text(text=response[0], reply_markup=response[1])
+    await program.handle_button(query)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -41,12 +34,6 @@ async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    #response: (str, InlineKeyboardMarkup) = program.handle_response(update.message)
-    #if type(response) is str:
-    #    response = (response, None)
-
-    #logging.info('Bot: ', response)
-    #await update.message.reply_text(response[0], reply_markup=response[1])
     await program.handle_response_connection(update.message)
 
 

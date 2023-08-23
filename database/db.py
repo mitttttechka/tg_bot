@@ -133,14 +133,18 @@ def get_all_tasks():
 
 
 def add_new_task(task):
+    q = f'SELECT MAX(task_id) FROM {Tables.task_table}'
+    answer = send_query(q)
+    task_id = int(answer[0][0]) + 1
     q = f'INSERT INTO {Tables.task_table} VALUES (' \
-        f'(SELECT MAX(task_id) + 1 FROM {Tables.task_table}), ' \
+        f'{str(task_id)}, ' \
         f'\'{task.text}\', ' \
         f'\'{task.picture_link}\', ' \
         f'{task.question}, ' \
         f'{task.section_id})'
     logging.warning(q)
     send_query(q)
+    return task_id
 
 
 def get_task_by_id(task_id):
@@ -151,7 +155,6 @@ def get_task_by_id(task_id):
 
 def get_learning_tracks_list():
     q = f'SELECT track_id, track_name FROM {Tables.track_id_name_table}'
-    # q = f'SELECT DISTINCT track_id FROM {Tables.learning_track_table}'
     answer = send_query(q)
     return answer
 

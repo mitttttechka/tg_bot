@@ -1,30 +1,30 @@
 import logging
+
+from instances import user, task
 from database import db
-import user
-import task
 
 
 class ChangeState:
-    empty = 0,
-    await_learn_track = 1,
-    update_learn_track = 2,
-    await_current_sort = 3,
-    update_current_sort = 4,
-    await_change_current = 5,
-    update_change_sort = 6,
-    await_add_task_middle = 7,
-    update_add_task_middle = 8,
-    await_remove_task = 9,
-    update_remove_task = 10,
-    await_resort_existing = 11,
-    update_resort_existing = 12,
-    await_new_sort = 13,
-    update_new_sort = 14,
-    await_add_task_end = 15,
-    update_add_task_end = 16,
-    normal = 17,
-    await_set_position = 18,
-    await_resort = 19,
+    empty = 0
+    await_learn_track = 1
+    update_learn_track = 2
+    await_current_sort = 3
+    update_current_sort = 4
+    await_change_current = 5
+    update_change_sort = 6
+    await_add_task_middle = 7
+    update_add_task_middle = 8
+    await_remove_task = 9
+    update_remove_task = 10
+    await_resort_existing = 11
+    update_resort_existing = 12
+    await_new_sort = 13
+    update_new_sort = 14
+    await_add_task_end = 15
+    update_add_task_end = 16
+    normal = 17
+    await_set_position = 18
+    await_resort = 19
     view_current = 20
 
 
@@ -135,7 +135,6 @@ def manage_learning_track(user_id, user_state, *data):
     if track_state.state == ChangeState.await_resort_existing:
         track_state = update_resort_existing(track_state, data[0][0])
         track_state = update_remove_task(track_state, data[0][0])
-        # db.update_learning_track(track_state.track_id, track_state.get_sort())
         key = await_set_position(track_state)
         track_state.change_state(ChangeState.await_resort)
         return key
@@ -189,8 +188,8 @@ def await_new_sort(track_state, *add_text):
 
 
 # TODO opportunity to input several tasks
-def update_new_sort(track_state, person, text):
-    answer = update_add_task_middle(track_state, person, text)
+def update_new_sort(track_state, text):
+    answer = update_add_task_middle(track_state, text)
     if type(answer) is not LearningTrack:
         return track_state, 'Incorrect Task ID. Please try again\n'
     track_state = answer
@@ -198,7 +197,7 @@ def update_new_sort(track_state, person, text):
         sort_id = 0
     else:
         sort_id = len(track_state.sorting)
-    track_state = update_set_position(track_state, person, sort_id + 1)
+    track_state = update_set_position(track_state, sort_id + 1)
     return track_state, 'Task was added to the new sorting.\n'
 
 
@@ -208,7 +207,6 @@ def await_learning_track(track_state):
     keyboard = []
     for track in tracks_list:
         button = track[1], f'67{str(track[0]).zfill(3)}'
-        # button = track[0], f'67{str(track[0]).zfill(3)}'
         keyboard.append(button)
     keyboard.append(("Back", "56"))
 

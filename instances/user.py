@@ -1,6 +1,6 @@
-from database import db
 import logging
 
+from database import db
 
 active_users = []
 
@@ -8,7 +8,7 @@ active_users = []
 class User:
 
     def __init__(self, user_id):
-        self.__user_id = user_id
+        self.user_id = user_id
         info = self.get_user_info()
         self.user_name: str = info[1]
         self.type: int = int(info[2])
@@ -18,9 +18,6 @@ class User:
         self.current_position: int = int(info[6])
         self.working_on = None
         self.working_on_add = None
-
-    def user_id(self):
-        return self.__user_id
 
     def get_user_info(self):
         logging.debug(self.user_id)
@@ -70,6 +67,6 @@ def find_user_in_active(user_id):
 
 
 def update_active_users(user):
-    index = find_user_in_active(user.__user_id)
+    index = find_user_in_active(user.user_id)
     active_users[index] = user
     # TODO add async update to database

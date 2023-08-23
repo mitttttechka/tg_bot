@@ -1,21 +1,22 @@
 import logging
+
 from database import db
-from instances import user
+from instances import user, question
 
 
 class ChangeState:
-    new_task = 1,
-    awaiting_section_id = 2,
-    updating_section_id = 3,
-    awaiting_text = 4,
-    updating_text = 5,
-    awaiting_picture_nec = 6,
-    awaiting_picture_file = 7,
-    updating_picture = 8,
-    awaiting_question = 9,
-    updating_question = 10,
-    normal = 11,
-    to_submit = 12,
+    new_task = 1
+    awaiting_section_id = 2
+    updating_section_id = 3
+    awaiting_text = 4
+    updating_text = 5
+    awaiting_picture_nec = 6
+    awaiting_picture_file = 7
+    updating_picture = 8
+    awaiting_question = 9
+    updating_question = 10
+    normal = 11
+    to_submit = 12
     create_question = 13
 
 
@@ -48,35 +49,20 @@ class Task:
     def get_task_info(self):
         return db.get_task(self.task_id)
 
-    def change_state(self, state, person):
+    def change_state(self, state):
         self.state = state
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_section(self, section, person):
+    def change_section(self, section):
         self.section_id = section
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_text(self, text, person):
+    def change_text(self, text):
         self.text = text
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_picture(self, link, person):
+    def change_picture(self, link):
         self.picture_link = link
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
-    def change_question(self, need, person):
+    def change_question(self, need):
         self.question = need
-        person.working_on = self
-        user.update_active_users(person)
-        return self
 
 
 def add_new_section(text):
@@ -122,34 +108,37 @@ def add_task(user_id, user_state, *data):
 
     # Received section_id in message, asks for text
     if task_state.state == ChangeState.awaiting_section_id:
-        task_state = update_section_id(task_state, person, user_state)
-        return await_text(task_state, person)
+        task_state = update_section_id(task_state, user_state)
+        return await_text(task_state)
 
     # Task state is empty, first question
     if task_state.state == ChangeState.new_task:
-        return await_section_id(task_state, person)
+        return await_section_id(task_state)
 
     # Receiving text, asks for picture
     elif task_state.state == ChangeState.awaiting_text:
-        task_state = update_text(task_state, person, data[0][0])
-        return await_picture_nec(task_state, person)
+        task_state = update_text(task_state, data[0][0])
+        return await_picture_nec(task_state)
 
     # TODO add picture support
     elif task_state.state == ChangeState.awaiting_picture_nec:
-        task_state = updating_picture(task_state, person, data[0][0])
-        return await_question(task_state, person)
+        task_state = updating_picture(task_state, data[0][0])
+        return await_question(task_state)
 
-    # TODO add question type functional
     elif task_state.state == ChangeState.awaiting_question:
-        task_state = update_question(task_state, person, user_state[2])
+        task_state = update_question(task_state, user_state[2])
         if task_state.question == 'TRUE':
-            task_state.change_state(ChangeState.create_question, person)
-            return await_create_question(task_state, person) #here or from menu?
+            task_state.change_state(ChangeState.create_question)
+            return question.add_question(user_id, '70')  # here or from menu?
         else:
-            task_state.change_state(ChangeState.to_submit, person)
+            task_state.change_state(ChangeState.to_submit)
 
     if task_state.state == ChangeState.to_submit:
-        db.add_new_task(task_state)
+        new_task_id = db.add_new_task(task_state)
+        if person.working_on_add is not None and type(person.working_on_add) == question.Question:
+            person.working_on_add.change_task_id(new_task_id)
+            person.working_on_add.set_question_settings()
+            person.working_on_add = None
         person.working_on = None
         user.update_active_users(person)
         return adding_complete(task_state)
@@ -157,8 +146,8 @@ def add_task(user_id, user_state, *data):
     return None
 
 
-def await_section_id(task_state, person):
-    task_state.change_state(ChangeState.awaiting_section_id, person)
+def await_section_id(task_state):
+    task_state.change_state(ChangeState.awaiting_section_id)
     sections = get_all_sections()
     keyboard = []
     for section in sections:
@@ -170,44 +159,44 @@ def await_section_id(task_state, person):
     return mes, keyboard
 
 
-def update_section_id(task_state, person, user_state):
-    task_state = task_state.change_state(ChangeState.updating_section_id, person)
-    task_state = task_state.change_section(int(user_state[2:5]), person)
+def update_section_id(task_state, user_state):
+    task_state = task_state.change_state(ChangeState.updating_section_id)
+    task_state = task_state.change_section(int(user_state[2:5]))
     return task_state
 
 
-def await_text(task_state, person):
+def await_text(task_state):
     # TODO Change section_id to section name
-    task_state = task_state.change_state(ChangeState.awaiting_text, person)
+    task_state = task_state.change_state(ChangeState.awaiting_text)
     mes = f"Please write task context for section {task_state.section_id}:"
     return mes, None
 
 
-def update_text(task_state, person, text):
-    task_state = task_state.change_state(ChangeState.updating_text, person)
+def update_text(task_state, text):
+    task_state = task_state.change_state(ChangeState.updating_text)
     logging.warning('Here')
-    task_state = task_state.change_text(text, person)
+    task_state = task_state.change_text(text)
     return task_state
 
 
-def await_picture_nec(task_state, person):
+def await_picture_nec(task_state):
     # TODO make keyboard for picture adding
-    task_state = task_state.change_state(ChangeState.awaiting_picture_nec, person)
+    task_state = task_state.change_state(ChangeState.awaiting_picture_nec)
     mes = f"Text \'{task_state.text}\' has been added. Do you want to add picture?"
     return mes, None
 
 
-def updating_picture(task_state, person, link):
-    task_state = task_state.change_state(ChangeState.updating_picture, person)
+def updating_picture(task_state, link):
+    task_state = task_state.change_state(ChangeState.updating_picture)
     if link.lower() == 'no':
-        task_state = task_state.change_picture('NONE', person)
+        task_state = task_state.change_picture('NONE')
     else:
-        task_state = task_state.change_picture(link, person)
+        task_state = task_state.change_picture(link)
     return task_state
 
 
-def await_question(task_state, person):
-    task_state.change_state(ChangeState.awaiting_question, person)
+def await_question(task_state):
+    task_state.change_state(ChangeState.awaiting_question)
     keyboard = []
     yes_but = "Yes", "591"
     no_but = "No", "592"
@@ -218,12 +207,12 @@ def await_question(task_state, person):
     return mes, keyboard
 
 
-def update_question(task_state, person, text):
-    task_state = task_state.change_state(ChangeState.updating_question, person)
+def update_question(task_state, text):
+    task_state = task_state.change_state(ChangeState.updating_question)
     if text == '1':
-        task_state = task_state.change_question('TRUE', person)
+        task_state = task_state.change_question('TRUE')
     else:
-        task_state = task_state.change_question('FALSE', person)
+        task_state = task_state.change_question('FALSE')
     return task_state
 
 

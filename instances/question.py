@@ -1,25 +1,25 @@
 import logging
+
+from instances import task, user
 from database import db
-import user
-import task
 
 
 class QuestionType:
-    open_question = 'Open question',
-    single_test = 'Test with single answer',
-    multiple_test = 'Test with multiple answers',
+    open_question = 'Open question'
+    single_test = 'Test with single answer'
+    multiple_test = 'Test with multiple answers'
     none = 'None'
 
 
 class QuestionState:
-    none = 0,
-    await_menu = 1,
-    await_add_correct = 2,
-    update_add_correct = 3,
-    await_add_incorrect = 4,
-    update_add_incorrect = 5,
-    await_save = 6,
-    update_dave = 7,
+    none = 0
+    await_menu = 1
+    await_add_correct = 2
+    update_add_correct = 3
+    await_add_incorrect = 4
+    update_add_incorrect = 5
+    await_save = 6
+    update_dave = 7
     normal = 8
 
 
@@ -35,8 +35,8 @@ class Question:
             self.state = QuestionState.none
         else:
             self.task_id = None
-            self.correct_answers = None
-            self.incorrect_answers = None
+            self.correct_answers = []
+            self.incorrect_answers = []
             self.question_type = QuestionType.none
             self.question_text = None
             self.state = QuestionState.none
@@ -63,6 +63,9 @@ class Question:
 
     def change_state(self, q_state):
         self.state = q_state
+
+    def change_task_id(self, task_id):
+        self.task_id = task_id
 
     def update_question_type(self):
         self.question_type = self.get_question_type()
@@ -103,11 +106,46 @@ def add_question(user_id, user_state, *data):
     question_state: Question = person.working_on_add
 
     if question_state.state == QuestionState.none:
-        await_menu(question_state)
+        return await_menu(question_state)
+
+    if question_state.state == QuestionState.await_menu:
+        if user_state[2] == '1':
+            return await_add_correct_answer(question_state)
+        elif user_state[2] == '2':
+            return await_add_incorrect_answer(question_state)
+        elif user_state[2] == '3':
+            saved = await_save_answers(question_state)
+            if not saved:
+                err_mes = 'Not possible to save without at least 1 correct answer.'
+                return await_menu(question_state, err_mes)
+            #person.working_on_add = None
+            if type(person.working_on) == task.Task:
+                person.working_on.change_state(task.ChangeState.to_submit, person)
+                reply = task.add_task(user_id, user_state)
+                return reply[0], reply[1], True
+        elif user_state[2] == '4':
+            person.working_on_add = None
+            if person.working_on is not None and type(person.working_on) == task.Task:
+                return task.await_question(person.working_on, person)
+
+    if question_state.state == QuestionState.await_add_correct:
+        add_text = ''
+        if len(data[0][0]) > 0:
+            question_state.add_correct_answer(data[0][0])
+        else:
+            add_text = 'Empty text. Please try again.'
+        return await_menu(question_state, add_text)
+    if question_state.state == QuestionState.await_add_incorrect:
+        add_text = ''
+        if len(data[0][0]) > 0:
+            question_state.add_incorrect_answer(data[0][0])
+        else:
+            add_text = 'Empty text. Please try again.'
+        return await_menu(question_state, add_text)
 
 
 def get_question_text_for_new_task(person: user.User) -> str:
-    if person.working_on is None or type(person.working_on_add) is not task.Task:
+    if person.working_on is None or type(person.working_on) is not task.Task:
         return ''
     task_cur: task.Task = person.working_on
     return task_cur.text
@@ -115,13 +153,33 @@ def get_question_text_for_new_task(person: user.User) -> str:
 
 # TODO check unsaved data and additional question
 def await_menu(question_state: Question, *add_text):
-    question_state.change_state
-    mes = question_state.message_representation()
-    keyboard = [['Add correct answer', '5911'],
-                ['Add incorrect answer', '5912'],
-                ['Save question settings', '5913'],
-                ['Back (ALL UNSAVED DATA WILL BE LOST'], '59']
+    question_state.change_state(QuestionState.await_menu)
+    mes = ''
+    if len(add_text) > 0:
+        mes += f'{add_text[0]}\n'
+    mes += question_state.message_representation()
+    keyboard = [['Add correct answer', '701'],
+                ['Add incorrect answer', '702'],
+                ['Save question settings', '703'],
+                ['Back (ALL UNSAVED DATA WILL BE LOST)', '704']]
+    return mes, keyboard
 
 
+def await_add_correct_answer(question_state: Question):
+    question_state.change_state(QuestionState.await_add_correct)
+    mes = 'Please write correct answer:\n'
+    return mes, None
 
 
+def await_add_incorrect_answer(question_state: Question):
+    question_state.change_state(QuestionState.await_add_incorrect)
+    mes = 'Please write incorrect answer:\n'
+    return mes, None
+
+
+def await_save_answers(question_state: Question):
+    question_state.change_state(QuestionState.await_save)
+    if len(question_state.correct_answers) > 0:
+        #question_state.set_question_settings()
+        return True
+    return False

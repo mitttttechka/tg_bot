@@ -1,16 +1,21 @@
-from telegram import InlineKeyboardMarkup
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 import menus
 import logging
 from instances import learning_track, user, task
 
 
-def handle_response_connection(message):
-    response: (str, InlineKeyboardMarkup) = handle_response(message)
+async def handle_response_connection(message):
+    response: (str, [[str, str]]) = handle_response(message)
     if type(response) is str:
        response = (response, None)
     logging.info('Bot: ', response)
-    message.reply_text(response[0], reply_markup=response[1])
+    await message.reply_text(response[0], reply_markup=array_to_keyboard(response[1]))
+
+
+async def handle_button(query):
+    response: (str, [[str, str]]) = menus.menu_button_press(query.data, query.message.chat.id)
+    await query.edit_message_text(text=response[0], reply_markup=array_to_keyboard(response[1]))
 
 
 def handle_response(message):
@@ -56,4 +61,19 @@ def handle_response(message):
         response = menus.manage_learning_track_menu(user_id, None, text)
         return response
 
+    elif person.current_position == 70:
+        logging.warning('current_70')
+        response = menus.add_question_menu(user_id, None, text)
+        return response
+
     return "Answer", None
+
+
+def array_to_keyboard(array):
+    if array is None:
+        return None
+    keyboard = []
+    for button in array:
+        keyboard.append([InlineKeyboardButton(button[0], callback_data=button[1])])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    return reply_markup
