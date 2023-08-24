@@ -160,38 +160,38 @@ def await_section_id(task_state):
 
 
 def update_section_id(task_state, user_state):
-    task_state = task_state.change_state(ChangeState.updating_section_id)
-    task_state = task_state.change_section(int(user_state[2:5]))
+    task_state.change_state(ChangeState.updating_section_id)
+    task_state.change_section(int(user_state[2:5]))
     return task_state
 
 
 def await_text(task_state):
     # TODO Change section_id to section name
-    task_state = task_state.change_state(ChangeState.awaiting_text)
+    task_state.change_state(ChangeState.awaiting_text)
     mes = f"Please write task context for section {task_state.section_id}:"
     return mes, None
 
 
 def update_text(task_state, text):
-    task_state = task_state.change_state(ChangeState.updating_text)
+    task_state.change_state(ChangeState.updating_text)
     logging.warning('Here')
-    task_state = task_state.change_text(text)
+    task_state.change_text(text)
     return task_state
 
 
 def await_picture_nec(task_state):
     # TODO make keyboard for picture adding
-    task_state = task_state.change_state(ChangeState.awaiting_picture_nec)
+    task_state.change_state(ChangeState.awaiting_picture_nec)
     mes = f"Text \'{task_state.text}\' has been added. Do you want to add picture?"
     return mes, None
 
 
 def updating_picture(task_state, link):
-    task_state = task_state.change_state(ChangeState.updating_picture)
+    task_state.change_state(ChangeState.updating_picture)
     if link.lower() == 'no':
-        task_state = task_state.change_picture('NONE')
+        task_state.change_picture('NONE')
     else:
-        task_state = task_state.change_picture(link)
+        task_state.change_picture(link)
     return task_state
 
 
@@ -208,11 +208,11 @@ def await_question(task_state):
 
 
 def update_question(task_state, text):
-    task_state = task_state.change_state(ChangeState.updating_question)
+    task_state.change_state(ChangeState.updating_question)
     if text == '1':
-        task_state = task_state.change_question('TRUE')
+        task_state.change_question('TRUE')
     else:
-        task_state = task_state.change_question('FALSE')
+        task_state.change_question('FALSE')
     return task_state
 
 

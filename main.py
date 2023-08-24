@@ -34,7 +34,11 @@ async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_massage(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await program.handle_response_connection(update.message)
+    await program.handle_response_message(update.message)
+
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await program.handle_response_photo(update.message, context)
 
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,6 +56,7 @@ if __name__ == '__main__':
     dp.add_handler(CommandHandler('custom', custom_command))
     dp.add_handler(CallbackQueryHandler(button))
     dp.add_handler(MessageHandler(filters.TEXT, handle_massage))
+    dp.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     #dp.add_error_handler(error)
 

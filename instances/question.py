@@ -120,13 +120,13 @@ def add_question(user_id, user_state, *data):
                 return await_menu(question_state, err_mes)
             #person.working_on_add = None
             if type(person.working_on) == task.Task:
-                person.working_on.change_state(task.ChangeState.to_submit, person)
+                person.working_on.change_state(task.ChangeState.to_submit)
                 reply = task.add_task(user_id, user_state)
                 return reply[0], reply[1], True
         elif user_state[2] == '4':
             person.working_on_add = None
             if person.working_on is not None and type(person.working_on) == task.Task:
-                return task.await_question(person.working_on, person)
+                return task.await_question(person.working_on)
 
     if question_state.state == QuestionState.await_add_correct:
         add_text = ''
