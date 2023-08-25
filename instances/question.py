@@ -26,7 +26,7 @@ class QuestionState:
 class Question:
     def __init__(self, *task_id):
         if len(task_id) == 1:
-            self.task_id = int(task_id)
+            self.task_id = int(task_id[0])
             correct, incorrect = self.get_question_info()
             self.correct_answers = correct
             self.incorrect_answers = incorrect

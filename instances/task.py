@@ -120,7 +120,6 @@ def add_task(user_id, user_state, *data):
         task_state = update_text(task_state, data[0][0])
         return await_picture_nec(task_state)
 
-    # TODO add picture support
     elif task_state.state == ChangeState.awaiting_picture_nec:
         task_state = updating_picture(task_state, data[0][0])
         return await_question(task_state)
@@ -182,7 +181,8 @@ def update_text(task_state, text):
 def await_picture_nec(task_state):
     # TODO make keyboard for picture adding
     task_state.change_state(ChangeState.awaiting_picture_nec)
-    mes = f"Text \'{task_state.text}\' has been added. Do you want to add picture?"
+    mes = f"Text \'{task_state.text}\' has been added. Do you want to add picture?\n" \
+          f"Please send photo or type \'No\'"
     return mes, None
 
 
@@ -231,3 +231,7 @@ def all_tasks_message(*add_text):
     for s_task in tasks:
         mes += f'Task ID: {s_task.task_id}. Section: {s_task.section_id} Question: {s_task.question}\n{s_task.text}\n'
     return mes
+
+
+def await_change_task(user_id, user_state, *text):
+    return 1
