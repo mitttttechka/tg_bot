@@ -113,6 +113,12 @@ def update_name(user_id, name):
     send_query(q)
 
 
+def update_existing_task(task):
+    q = f'UPDATE {Tables.task_table} SET text = \'{task.text}\', picture_link = \'{task.picture_link}\',' \
+        f' question = \'{task.question}\', section_id = {task.section_id} WHERE task_id = {task.task_id}'
+    send_query(q)
+
+
 def add_new_section(text):
     q = f'INSERT INTO {Tables.sections_table} VALUES (' \
         f'(SELECT MAX(section_id) + 1 FROM {Tables.sections_table}), ' \

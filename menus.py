@@ -36,15 +36,17 @@ def menu_navigation(data, user_id, original_data, text):
         user.get_user(user_id).update_working_on(None)
         return learning_tracks_menu()
     elif data == nav.add_task_menu:
-        return add_task_menu(user_id, original_data, text)
+        return add_task(user_id, original_data, text)
+    elif data == nav.change_existing_task:
+        return manage_task(user_id, original_data, text)
     elif data == nav.add_section_request:
-        return add_section_request(text)
+        return add_section_request(text, person.user_id)
     elif data == nav.add_learning_track_menu:
-        return add_learning_track_menu(user_id, text)
+        return add_learning_track(user_id, text)
     elif data == nav.manage_learning_track_menu:
-        return manage_learning_track_menu(user_id, original_data, text)
+        return manage_learning_track(user_id, original_data, text)
     elif data == nav.add_question_menu:
-        return add_question_menu(user_id, original_data, text)
+        return add_question(user_id, original_data, text)
     else:
         return main_menu()
 
@@ -57,10 +59,9 @@ def menu_button_press(data, user_id):
     return menu_navigation(data, user_id, original_data, None)
 
 
-def message(person: user.User, user_id, text):
+def message(person: user.User, text):
     if "admin" in str(text):
         person.set_current_position(nav.admin_menu)
-
     # if person.current_position == nav.add_task_menu:
     #    response = add_task_menu(user_id, None, text)
     #    return response
@@ -146,29 +147,6 @@ def manage_tasks_menu():
     return f"Manage tasks menu / {nav.manage_tasks_menu}", keyboard
 
 
-def add_task_menu(user_id, user_state, *text):
-    reply = task.add_task(user_id, user_state, text)
-    message = reply[0]
-    keyboard = reply[1]
-    if len(reply) == 3:
-        complete = menu_button_press(nav.manage_tasks_menu, user_id)
-        message += f'\n{complete[0]}'
-        keyboard = complete[1]
-
-    return message, keyboard
-
-
-def add_question_menu(user_id, user_state, *text):
-    reply = question.add_question(user_id, user_state, text)
-    message = reply[0]
-    keyboard = reply[1]
-    if len(reply) == 3:
-        complete = menu_button_press(nav.manage_tasks_menu, user_id)
-        message += f'\n{complete[0]}'
-        keyboard = complete[1]
-    return message, keyboard
-
-
 def manage_classes_menu():
     keyboard = [["Add class", f'{nav.add_class}'],
                 ["Find class by id", f'{nav.find_class}'],
@@ -181,15 +159,6 @@ def manage_sections_menu():
                 ["Find section by id", f'{nav.find_section}'],
                 ["Back", f'{nav.admin_menu}']]
     return f"Manage sections menu / {nav.manage_sections_menu}", keyboard
-
-
-def add_section_request(text):
-    if text is not None:
-        task.add_new_section(text)
-        response = menu_button_press(nav.manage_sections_menu, user_id)
-        mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
-        return mes, response[1]
-    return f"Please write new section name:", None
 
 
 def manage_tests_menu():
@@ -206,7 +175,49 @@ def learning_tracks_menu():
     return f"Learning tracks menu / {nav.learning_tracks_menu}", keyboard
 
 
-def add_learning_track_menu(user_id, text):
+def add_task(user_id, user_state, *text):
+    reply = task.add_task(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
+    if len(reply) == 3:
+        complete = menu_button_press(nav.manage_tasks_menu, user_id)
+        mes += f'\n{complete[0]}'
+        keyboard = complete[1]
+    return mes, keyboard
+
+
+def manage_task(user_id, user_state, *text):
+    reply = task.manage_task(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
+    if len(reply) == 3:
+        complete = menu_button_press(nav.manage_tasks_menu, user_id)
+        mes += f'\n{complete[0]}'
+        keyboard = complete[1]
+    return mes, keyboard
+
+
+def add_question(user_id, user_state, *text):
+    reply = question.add_question(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
+    if len(reply) == 3:
+        complete = menu_button_press(nav.manage_tasks_menu, user_id)
+        mes += f'\n{complete[0]}'
+        keyboard = complete[1]
+    return mes, keyboard
+
+
+def add_section_request(text, user_id):
+    if text is not None:
+        task.add_new_section(text)
+        response = menu_button_press(nav.manage_sections_menu, user_id)
+        mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
+        return mes, response[1]
+    return f"Please write new section name:", None
+
+
+def add_learning_track(user_id, text):
     if text is not None:
         new_track_id = learning_track.add_learning_track(user_id, text)
         response = menu_button_press(nav.manage_learning_track_menu * 1000 + int(new_track_id), user_id)
@@ -214,12 +225,7 @@ def add_learning_track_menu(user_id, text):
     return "Please enter new learning track name", None
 
 
-def manage_learning_track_menu(user_id, user_state, *text):
+def manage_learning_track(user_id, user_state, *text):
     reply = learning_track.manage_learning_track(user_id, user_state, text)
-    return reply[0], reply[1]
-
-
-def change_existing_task_menu(user_id, user_state, *text):
-    reply = task.await_change_task(user_id, user_state, text)
     return reply[0], reply[1]
 
