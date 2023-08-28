@@ -4,6 +4,8 @@ from database import db
 from instances import user, question
 import menu_navigation as nav
 
+# TODO add support, so don't need several times to run to base (maybe add since last update)
+tasks = []
 
 class ChangeState:
     new_task = 1
@@ -18,9 +20,11 @@ class ChangeState:
     updating_question = 10
     normal = 11
     to_submit = 12
-    create_question = 13,
-    awaiting_task_id = 14,
+    create_question = 13
+    awaiting_task_id = 14
     awaiting_manage_task = 15
+    adding_question_in_manage = 16
+    submit_change_question = 17
 
 
 class Task:
@@ -88,6 +92,10 @@ def get_all_sections():
 
 
 def task_exists(task_id):
+    try:
+        task_id = int(task_id)
+    except:
+        return False
     s_task = db.get_task_by_id(task_id)
     if len(s_task) > 0:
         return True
@@ -105,7 +113,7 @@ def add_task(user_id, user_state, *data):
 
     # Task state is empty, first question
     if task_state.state == ChangeState.new_task:
-        return await_section_id(task_state)
+        return await_section_id(task_state, nav.add_task_menu)
 
     # Receiving text, asks for picture
     elif task_state.state == ChangeState.awaiting_text:
@@ -115,7 +123,7 @@ def add_task(user_id, user_state, *data):
 
     elif task_state.state == ChangeState.awaiting_picture_nec:
         task_state = updating_picture(task_state, data[0][0])
-        return await_question(task_state)
+        return await_question(task_state, nav.add_task_menu)
 
     elif task_state.state == ChangeState.awaiting_question:
         task_state = update_question(task_state, user_state[2])
@@ -148,25 +156,32 @@ def manage_task(user_id, user_state, *data):
 
     if task_state.state == ChangeState.awaiting_text:
         task_state = update_text(task_state, data[0][0])
-        updating_existing_task(task_state)
+        updating_existing_task(task_state, person)
         return manage_task_await_task_id(task_state, 'Text was changed.\n')
 
     if task_state.state == ChangeState.awaiting_picture_nec:
         task_state = updating_picture(task_state, data[0][0])
-        updating_existing_task(task_state)
+        updating_existing_task(task_state, person)
         return manage_task_await_task_id(task_state, 'Picture was changed.\n')
 
     if task_state.state == ChangeState.awaiting_question:
         task_state = update_question(task_state, user_state[2])
         if task_state.question == 'TRUE':
-            task_state.change_state(ChangeState.create_question)
+            task_state.change_state(ChangeState.adding_question_in_manage)
             return question.add_question(user_id, '70')  # TODO change because redirects to add
-        else:
-            return manage_task_await_task_id(task_state, 'Question was changed.\n')
+        task_state.change_state(ChangeState.submit_change_question)
+
+    if task_state.state == ChangeState.submit_change_question:
+        updating_existing_task(task_state, person)
+        return manage_task_await_task_id(task_state, 'Question was changed.\n')
+
+    if task_state.state == ChangeState.adding_question_in_manage:
+        updating_existing_task(task_state, person)
+        return manage_task_await_task_id(task_state, 'Picture was changed.\n')
 
     if task_state.state == ChangeState.awaiting_section_id:
         task_state = update_section_id(task_state, user_state)
-        updating_existing_task(task_state)
+        updating_existing_task(task_state, person)
         return manage_task_await_task_id(task_state, 'Section was changed.\n')
 
 
@@ -198,7 +213,7 @@ def manage_task_await_task_id(task_state, *add_text):
                 ['Change question', f'{nav.change_existing_task}3'],
                 ['Change section', f'{nav.change_existing_task}4'],
                 ['Delete task', f'{nav.change_existing_task}5'],
-                ['Back', f'{nav.admin_menu}']]
+                ['Back', f'{nav.manage_tasks_menu}']]
 
     return mes, keyboard
 
@@ -209,15 +224,16 @@ def manage_task_await_manage_task(task_state, user_state):
     elif user_state == '2':
         return await_picture_nec(task_state)
     elif user_state == '3':
-        return await_question(task_state)
+        return await_question(task_state, nav.change_existing_task)
     elif user_state == '4':
-        return await_section_id(task_state)
+        return await_section_id(task_state, nav.change_existing_task)
     elif user_state == '5':
         return delete_task(task_state)
 
 
 def delete_task(task_state):
-    return 1
+    db.delete_task(task_state.task_id)
+    return manage_task_new_task(task_state, 'Task was deleted. \n')
 
 
 def initiate_task(user_id, user_state):
@@ -234,8 +250,12 @@ def initiate_task(user_id, user_state):
     return task_state, person
 
 
-def updating_existing_task(task_state):
+def updating_existing_task(task_state, person):
     db.update_existing_task(task_state)
+    if person.working_on_add is not None and type(person.working_on_add) == question.Question:
+        person.working_on_add.change_task_id(task_state.task_id)
+        person.working_on_add.set_question_settings()
+        person.working_on_add = None
     return None
 
 
@@ -250,12 +270,12 @@ def submitting_new_task(task_state, person):
     return adding_complete(task_state)
 
 
-def await_section_id(task_state):
+def await_section_id(task_state, menu_section):
     task_state.change_state(ChangeState.awaiting_section_id)
     sections = get_all_sections()
     keyboard = []
     for section in sections:
-        button = section[1], f'59{str(section[0]).zfill(3)}'
+        button = section[1], f'{menu_section}{str(section[0]).zfill(3)}'
         keyboard.append(button)
     keyboard.append(("Back", "52"))
 
@@ -300,11 +320,11 @@ def updating_picture(task_state, link):
     return task_state
 
 
-def await_question(task_state):
+def await_question(task_state, menu_section):
     task_state.change_state(ChangeState.awaiting_question)
     keyboard = []
-    yes_but = "Yes", "591"
-    no_but = "No", "592"
+    yes_but = "Yes", f"{menu_section}1"
+    no_but = "No", f"{menu_section}2"
     keyboard.append(yes_but)
     keyboard.append(no_but)
 

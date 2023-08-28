@@ -25,6 +25,7 @@ def menu_navigation(data, user_id, original_data, text):
     elif data == nav.manage_users_menu:
         return manage_users_menu()
     elif data == nav.manage_tasks_menu:
+        user.get_user(user_id).update_working_on(None)
         return manage_tasks_menu()
     elif data == nav.manage_classes_menu:
         return manage_classes_menu()

@@ -36,9 +36,10 @@ class User:
         update_active_users(self)
 
     def set_current_position(self, current_position):
-        db.set_current(self.user_id, int(current_position))
-        self.current_position = current_position
-        update_active_users(self)
+        if self.current_position != current_position:
+            db.set_current(self.user_id, int(current_position))
+            self.current_position = current_position
+            update_active_users(self)
 
     def update_name(self, name):
         db.update_name(self.user_id, name)

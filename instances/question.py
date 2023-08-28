@@ -2,6 +2,7 @@ import logging
 
 from instances import task, user
 from database import db
+import menu_navigation as nav
 
 
 class QuestionType:
@@ -118,15 +119,23 @@ def add_question(user_id, user_state, *data):
             if not saved:
                 err_mes = 'Not possible to save without at least 1 correct answer.'
                 return await_menu(question_state, err_mes)
-            #person.working_on_add = None
+
             if type(person.working_on) == task.Task:
-                person.working_on.change_state(task.ChangeState.to_submit)
-                reply = task.add_task(user_id, user_state)
-                return reply[0], reply[1], True
+                if person.working_on.state == task.ChangeState.adding_question_in_manage:
+                    person.working_on.change_state(task.ChangeState.submit_change_question)
+                    reply = task.manage_task(user_id, user_state)
+                    return reply[0], reply[1]
+                else:
+                    person.working_on.change_state(task.ChangeState.to_submit)
+                    reply = task.add_task(user_id, user_state)
+                    return reply[0], reply[1], True
         elif user_state[2] == '4':
             person.working_on_add = None
             if person.working_on is not None and type(person.working_on) == task.Task:
-                return task.await_question(person.working_on)
+                if person.working_on.state == task.ChangeState.adding_question_in_manage:
+                    return task.await_question(person.working_on, nav.change_existing_task)
+                else:
+                    return task.await_question(person.working_on, nav.add_task_menu)
 
     if question_state.state == QuestionState.await_add_correct:
         add_text = ''

@@ -3,6 +3,7 @@ import logging
 
 
 def send_query(query):
+    logging.warning(query)
     answer = db_connection.send_query(query)
     return answer
 
@@ -68,7 +69,6 @@ def insert(table, values):
     for row in values:
         q += f'{row}, '
     q = q[0:len(q) - 2]
-    logging.debug(q)
     send_query(q)
 
 
@@ -94,7 +94,6 @@ def get_user(user_id):
 
 
 def create_new_user(user_id):
-    logging.debug(f'Creating for {user_id}')
     insert(Tables.user_table, [(user_id, '', 1, 0, 'False', 0, 0)])
 
 
@@ -148,7 +147,6 @@ def add_new_task(task):
         f'\'{task.picture_link}\', ' \
         f'{task.question}, ' \
         f'{task.section_id})'
-    logging.warning(q)
     send_query(q)
     return task_id
 
@@ -204,10 +202,19 @@ def get_answers(task_id):
 
 
 def set_answers(task_id, correct, incorrect):
+    q = f'DELETE FROM {Tables.task_answers_table} WHERE task_id = {task_id}'
+    send_query(q)
     q = f'INSERT INTO {Tables.task_answers_table} VALUES '
     for answer in correct:
         q += f'({task_id}, \'{answer}\', \'TRUE\'), '
     for answer in incorrect:
         q += f'({task_id}, \'{answer}\', \'FALSE\'), '
     q = q[0:len(q) - 2]
+    send_query(q)
+
+
+def delete_task(task_id):
+    q = f'DELETE FROM {Tables.task_table} WHERE task_id = {task_id}'
+    send_query(q)
+    q = f'DELETE FROM {Tables.task_answers_table} WHERE task_id = {task_id}'
     send_query(q)
