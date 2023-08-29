@@ -1,5 +1,5 @@
 import logging
-from instances import learning_track, question, user, task
+from instances import learning_track, question, user, task, section
 import menu_navigation as nav
 
 
@@ -42,6 +42,8 @@ def menu_navigation(data, user_id, original_data, text):
         return manage_task(user_id, original_data, text)
     elif data == nav.add_section_request:
         return add_section_request(text, person.user_id)
+    elif data == nav.find_section:
+        return manage_section(user_id, original_data, text)
     elif data == nav.add_learning_track_menu:
         return add_learning_track(user_id, text)
     elif data == nav.manage_learning_track_menu:
@@ -77,13 +79,6 @@ def start(person):
 def say_my_name(person, text):
     person.update_name(text)
     person.set_current_position(nav.main_menu)
-
-
-def add_section(text, user_id):
-    task.add_new_section(text)
-    response = menu_button_press(nav.manage_sections_menu, user_id)
-    mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
-    return mes, response[1]
 
 
 def main_menu():
@@ -211,11 +206,18 @@ def add_question(user_id, user_state, *text):
 
 def add_section_request(text, user_id):
     if text is not None:
-        task.add_new_section(text)
+        section.add_new_section(text)
         response = menu_button_press(nav.manage_sections_menu, user_id)
         mes = f'Section \'{text}\' has been added successfully!\n{response[0]}'
         return mes, response[1]
     return f"Please write new section name:", None
+
+
+def manage_section(user_id, user_state, *text):
+    reply = section.manage_section(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
+    return mes, keyboard
 
 
 def add_learning_track(user_id, text):

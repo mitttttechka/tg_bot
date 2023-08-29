@@ -1,11 +1,16 @@
 import logging
 
 from database import db
-from instances import user, question
+from instances import user, question, section
 import menu_navigation as nav
+from datetime import datetime
 
-# TODO add support, so don't need several times to run to base (maybe add since last update)
-tasks = []
+static_tasks = []
+
+
+class LastUpdated:
+    dt_all_tasks_updated = None
+
 
 class ChangeState:
     new_task = 1
@@ -64,6 +69,10 @@ class Task:
         self.question = info[3]
         self.section_id: int = int(info[4])
         self.state = ChangeState.normal
+        update_active_tasks(self)
+
+    def change_id(self, task_id):
+        self.task_id = task_id
 
     def change_state(self, state):
         self.state = state
@@ -81,26 +90,44 @@ class Task:
         self.question = need
 
 
-def add_new_section(text):
-    db.add_new_section(text)
-
-
-def get_all_sections():
-    sections = db.get_all_sections()
-    print(sections)
-    return sections
-
-
-def task_exists(task_id):
+def get_task(task_id):
     try:
         task_id = int(task_id)
     except:
-        return False
-    s_task = db.get_task_by_id(task_id)
-    if len(s_task) > 0:
-        return True
+        return None
+    has_task = find_task_in_static(task_id)
+    if has_task != -1:
+        return static_tasks[has_task]
+    tasks_array = db.get_task_by_id(task_id)
+    if len(tasks_array) > 0:
+        db_task = db_answer_to_tasks_array(tasks_array)
+        update_active_tasks(db_task[0])
+        return db_task[0]
     else:
-        return False
+        return None
+
+
+def find_task_in_static(task_id):
+    for i in range(len(static_tasks)):
+        if static_tasks[i].task_id == task_id:
+            return i
+    return -1
+
+
+def update_active_tasks(task):
+    index = find_task_in_static(task.task_id)
+    if index == -1:
+        static_tasks.append(task)
+        static_tasks.sort(key= lambda x: x.task_id, reverse=False)
+    else:
+        static_tasks[index] = task
+    # TODO add async update to database
+
+
+def task_exists(task_id):
+    if get_task(task_id) is not None:
+        return True
+    return False
 
 
 def add_task(user_id, user_state, *data):
@@ -139,8 +166,6 @@ def add_task(user_id, user_state, *data):
     return None
 
 
-# TODO make back buttons (either to menu, then empty current_task for users,
-# when pressing back, either to the previous point
 def manage_task(user_id, user_state, *data):
     task_state, person = initiate_task(user_id, user_state)
 
@@ -168,7 +193,7 @@ def manage_task(user_id, user_state, *data):
         task_state = update_question(task_state, user_state[2])
         if task_state.question == 'TRUE':
             task_state.change_state(ChangeState.adding_question_in_manage)
-            return question.add_question(user_id, '70')  # TODO change because redirects to add
+            return question.add_question(user_id, '70')
         task_state.change_state(ChangeState.submit_change_question)
 
     if task_state.state == ChangeState.submit_change_question:
@@ -233,6 +258,8 @@ def manage_task_await_manage_task(task_state, user_state):
 
 def delete_task(task_state):
     db.delete_task(task_state.task_id)
+    index = find_task_in_static(task_state.task_id)
+    static_tasks.pop(index)
     return manage_task_new_task(task_state, 'Task was deleted. \n')
 
 
@@ -252,6 +279,7 @@ def initiate_task(user_id, user_state):
 
 def updating_existing_task(task_state, person):
     db.update_existing_task(task_state)
+    update_active_tasks(task_state)
     if person.working_on_add is not None and type(person.working_on_add) == question.Question:
         person.working_on_add.change_task_id(task_state.task_id)
         person.working_on_add.set_question_settings()
@@ -261,6 +289,8 @@ def updating_existing_task(task_state, person):
 
 def submitting_new_task(task_state, person):
     new_task_id = db.add_new_task(task_state)
+    task_state.change_id(new_task_id)
+    update_active_tasks(task_state)
     if person.working_on_add is not None and type(person.working_on_add) == question.Question:
         person.working_on_add.change_task_id(new_task_id)
         person.working_on_add.set_question_settings()
@@ -272,10 +302,10 @@ def submitting_new_task(task_state, person):
 
 def await_section_id(task_state, menu_section):
     task_state.change_state(ChangeState.awaiting_section_id)
-    sections = get_all_sections()
+    sections = section.get_all_sections()
     keyboard = []
-    for section in sections:
-        button = section[1], f'{menu_section}{str(section[0]).zfill(3)}'
+    for s_section in sections:
+        button = s_section.section_name, f'{menu_section}{str(s_section.section_id).zfill(3)}'
         keyboard.append(button)
     keyboard.append(("Back", "52"))
 
@@ -290,9 +320,8 @@ def update_section_id(task_state, user_state):
 
 
 def await_text(task_state):
-    # TODO Change section_id to section name
     task_state.change_state(ChangeState.awaiting_text)
-    mes = f"Please write task context for section {task_state.section_id}:"
+    mes = f"Please write task context for section {section.get_name_for_section(task_state.section_id)}:"
     return mes, None
 
 
@@ -353,19 +382,18 @@ def all_tasks_message(*add_text):
 
 
 def task_message(task_id, *add_text):
-    tasks = get_task_by_id(task_id)
-    return form_tasks_message(tasks, add_text)
+    tasks = get_task(task_id)
+    return form_tasks_message([tasks], add_text)
 
 
-# TODO sort by task ID
 def get_all_tasks():
-    tasks_array = db.get_all_tasks()
-    return db_answer_to_tasks_array(tasks_array)
-
-
-def get_task_by_id(task_id):
-    tasks_array = db.get_task_by_id(task_id)
-    return db_answer_to_tasks_array(tasks_array)
+    if LastUpdated.dt_all_tasks_updated is None or (datetime.now() - LastUpdated.dt_all_tasks_updated).seconds > 120:
+        tasks_array = db.get_all_tasks()
+        LastUpdated.dt_all_tasks_updated = datetime.now()
+        tasks = db_answer_to_tasks_array(tasks_array)
+        for single_task in tasks:
+            update_active_tasks(single_task)
+    return static_tasks
 
 
 def db_answer_to_tasks_array(tasks_array):

@@ -119,10 +119,14 @@ def update_existing_task(task):
 
 
 def add_new_section(text):
+    q = f'SELECT MAX(section_id) FROM {Tables.sections_table}'
+    answer = send_query(q)
+    new_section_id = int(answer[0][0]) + 1
     q = f'INSERT INTO {Tables.sections_table} VALUES (' \
-        f'(SELECT MAX(section_id) + 1 FROM {Tables.sections_table}), ' \
+        f'{str(new_section_id)}, ' \
         f'\'{text}\')'
     send_query(q)
+    return new_section_id
 
 
 def get_all_sections():
@@ -157,6 +161,12 @@ def get_task_by_id(task_id):
     return answer
 
 
+def get_section_by_id(section_id):
+    q = f'SELECT * FROM {Tables.sections_table} WHERE task_id = {section_id}'
+    answer = send_query(q)
+    return answer
+
+
 def get_learning_tracks_list():
     q = f'SELECT track_id, track_name FROM {Tables.track_id_name_table}'
     answer = send_query(q)
@@ -182,6 +192,12 @@ def update_learning_track(track_id, sort):
 
 def get_learning_track_name(track_id):
     q = f'SELECT track_name FROM {Tables.track_id_name_table} WHERE track_id = {str(track_id)}'
+    answer = send_query(q)
+    return answer
+
+
+def get_section_name(section):
+    q = f'SELECT section_name FROM {Tables.sections_table} WHERE section_id = {str(section)}'
     answer = send_query(q)
     return answer
 

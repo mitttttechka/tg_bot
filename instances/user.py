@@ -71,3 +71,10 @@ def update_active_users(user):
     index = find_user_in_active(user.user_id)
     active_users[index] = user
     # TODO add async update to database
+
+
+# TODO async delete from db
+def delete_user(user_id):
+    index = find_user_in_active(user_id)
+    if index != -1:
+        active_users.pop(index)
