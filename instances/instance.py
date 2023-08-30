@@ -173,18 +173,18 @@ def manage_instance_new_instance(instance_state, *add_text):
 
 
 
-# def manage_instance_await_uid(instance_state, *add_text):
-#     instance_state.change_state(ChangeState.awaiting_manage_instance)
-#     mes = ''
-#     if len(add_text) > 0:
-#         mes += add_text[0]
-#     mes += instance_message(instance_state.uid)
-#
-#     keyboard = [['Change name', f'{nav.find_instance}1'],
-#                 ['Delete instance', f'{nav.find_instance}2'],
-#                 ['Back', f'{nav.manage_instances_menu}']]
-#
-#     return mes, keyboard
+def manage_instance_await_uid(instance_state, *add_text):
+    instance_state.change_state(ChangeState.awaiting_manage_instance)
+    mes = ''
+    if len(add_text) > 0:
+        mes += add_text[0]
+    mes += instance_message(instance_state.uid)
+
+    keyboard = [['Change name', f'{nav.find_instance}1'],
+                ['Delete instance', f'{nav.find_instance}2'],
+                ['Back', f'{nav.manage_instances_menu}']]
+
+    return mes, keyboard
 
 
 def manage_instance_await_manage_instance(instance_state, user_state):
