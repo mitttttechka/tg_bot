@@ -23,15 +23,19 @@ def menu_navigation(data, user_id, original_data, text):
         user.get_user(user_id).update_working_on(None)
         return admin_menu()
     elif data == nav.manage_users_menu:
+        user.get_user(user_id).update_working_on(None)
         return manage_users_menu()
     elif data == nav.manage_tasks_menu:
         user.get_user(user_id).update_working_on(None)
         return manage_tasks_menu()
     elif data == nav.manage_classes_menu:
+        user.get_user(user_id).update_working_on(None)
         return manage_classes_menu()
     elif data == nav.manage_sections_menu:
+        user.get_user(user_id).update_working_on(None)
         return manage_sections_menu()
     elif data == nav.manage_tests_menu:
+        user.get_user(user_id).update_working_on(None)
         return manage_tests_menu()
     elif data == nav.learning_tracks_menu:
         user.get_user(user_id).update_working_on(None)
@@ -131,7 +135,7 @@ def admin_menu():
 
 def manage_users_menu():
     keyboard = [["Delete user by id", f'{nav.delete_user_menu}'],
-                ["Change user by id", f'{nav.change_user_menu}'],
+                ["Change existing user", f'{nav.change_user_menu}'],
                 ["Back", f'{nav.admin_menu}']]
     return f"Manage users menu / {nav.manage_users_menu}", keyboard
 
@@ -145,14 +149,14 @@ def manage_tasks_menu():
 
 def manage_classes_menu():
     keyboard = [["Add class", f'{nav.add_class}'],
-                ["Find class by id", f'{nav.find_class}'],
+                ["Change existing class", f'{nav.find_class}'],
                 ["Back", f'{nav.admin_menu}']]
     return f"Manage classes menu / {nav.manage_classes_menu}", keyboard
 
 
 def manage_sections_menu():
     keyboard = [["Add section", f'{nav.add_section_request}'],
-                ["Find section by id", f'{nav.find_section}'],
+                ["Change existing section", f'{nav.find_section}'],
                 ["Back", f'{nav.admin_menu}']]
     return f"Manage sections menu / {nav.manage_sections_menu}", keyboard
 
@@ -166,7 +170,7 @@ def manage_tests_menu():
 
 def learning_tracks_menu():
     keyboard = [["Add learning track", f'{nav.add_learning_track_menu}'],
-                ["Manage learning track by id", f'{nav.manage_learning_track_menu}'],
+                ["Change existing learning track", f'{nav.manage_learning_track_menu}'],
                 ["Back", f'{nav.admin_menu}']]
     return f"Learning tracks menu / {nav.learning_tracks_menu}", keyboard
 

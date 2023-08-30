@@ -1,15 +1,9 @@
 import logging
 
 from database import db
-from instances import user, question, section
+from instances import user, question, section, units, instance
 import menu_navigation as nav
 from datetime import datetime
-
-static_tasks = []
-
-
-class LastUpdated:
-    dt_all_tasks_updated = None
 
 
 class ChangeState:
@@ -32,12 +26,14 @@ class ChangeState:
     submit_change_question = 17
 
 
-class Task:
+class Task(instance.Instance):
 
     def __init__(self, *task_id):
+        super().__init__()
+        self.type = Task
         if len(task_id) == 1:
-            self.task_id = task_id[0]
-            info = self.get_task_info()
+            self.uid = task_id[0]
+            info = self.get_info()
             self.text = info[1]
             self.picture_link = info[2]
             self.question = info[3]
@@ -51,19 +47,14 @@ class Task:
             self.section_id = task_id[4]
             self.state = ChangeState.normal
         else:
-            self.task_id = None
-            self.text = None
             self.picture_link = None
             self.question = None
             self.section_id = None
             self.state = ChangeState.new_task
 
-    def get_task_info(self):
-        return db.get_task_by_id(self.task_id)[0]
-
     def update(self, task_id):
         self.task_id = task_id
-        info = self.get_task_info()
+        info = self.get_info()
         self.text = info[1]
         self.picture_link = info[2]
         self.question = info[3]
@@ -71,14 +62,8 @@ class Task:
         self.state = ChangeState.normal
         update_active_tasks(self)
 
-    def change_id(self, task_id):
-        self.task_id = task_id
-
-    def change_state(self, state):
-        self.state = state
-
-    def change_section(self, section):
-        self.section_id = section
+    def change_section(self, section_id):
+        self.section_id = section_id
 
     def change_text(self, text):
         self.text = text
@@ -90,44 +75,44 @@ class Task:
         self.question = need
 
 
-def get_task(task_id):
-    try:
-        task_id = int(task_id)
-    except:
-        return None
-    has_task = find_task_in_static(task_id)
-    if has_task != -1:
-        return static_tasks[has_task]
-    tasks_array = db.get_task_by_id(task_id)
-    if len(tasks_array) > 0:
-        db_task = db_answer_to_tasks_array(tasks_array)
-        update_active_tasks(db_task[0])
-        return db_task[0]
-    else:
-        return None
+# def get_task(task_id):
+#     try:
+#         task_id = int(task_id)
+#     except:
+#         return None
+#     has_task = find_task_in_static(task_id)
+#     if has_task != -1:
+#         return static_tasks[has_task]
+#     tasks_array = db.get_task_by_id(task_id)
+#     if len(tasks_array) > 0:
+#         db_task = db_answer_to_tasks_array(tasks_array)
+#         update_active_tasks(db_task[0])
+#         return db_task[0]
+#     else:
+#         return None
 
 
-def find_task_in_static(task_id):
-    for i in range(len(static_tasks)):
-        if static_tasks[i].task_id == task_id:
-            return i
-    return -1
+# def find_task_in_static(task_id):
+#     for i in range(len(static_tasks)):
+#         if static_tasks[i].task_id == task_id:
+#             return i
+#     return -1
 
 
-def update_active_tasks(task):
-    index = find_task_in_static(task.task_id)
-    if index == -1:
-        static_tasks.append(task)
-        static_tasks.sort(key= lambda x: x.task_id, reverse=False)
-    else:
-        static_tasks[index] = task
-    # TODO add async update to database
+# def update_active_tasks(task):
+#     index = find_task_in_static(task.task_id)
+#     if index == -1:
+#         static_tasks.append(task)
+#         static_tasks.sort(key= lambda x: x.task_id, reverse=False)
+#     else:
+#         static_tasks[index] = task
+#     # TODO add async update to database
 
 
-def task_exists(task_id):
-    if get_task(task_id) is not None:
-        return True
-    return False
+# def task_exists(task_id):
+#     if get_task(task_id) is not None:
+#         return True
+#     return False
 
 
 def add_task(user_id, user_state, *data):
@@ -216,7 +201,8 @@ def manage_task_new_task(task_state, *add_text):
         mes += add_text[0]
     task_state.change_state(ChangeState.awaiting_task_id)
     mes += all_tasks_message('Please write Task ID to manage:\n')
-    return mes, None
+    keyboard = [['Back', f'{nav.manage_tasks_menu}']]
+    return mes, keyboard
 
 
 def get_existing_task(task_state, text):

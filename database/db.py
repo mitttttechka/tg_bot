@@ -1,6 +1,6 @@
 from database import db_connection
 import logging
-
+from instances import units
 
 def send_query(query):
     logging.warning(query)
@@ -93,6 +93,22 @@ def get_user(user_id):
     return answer
 
 
+def get_task_by_id(task_id):
+    q = f'SELECT * FROM {Tables.task_table} WHERE task_id = {task_id}'
+    answer = send_query(q)
+    return answer
+
+
+def get_section_by_id(section_id):
+    q = f'SELECT * FROM {Tables.sections_table} WHERE section_id = {section_id}'
+    answer = send_query(q)
+    return answer
+
+
+def get_info_by_id(uid, unit_type):
+    q = f'SELECT * FROM {units.Units.unit_dict[unit_type].db_table} WHERE id = {uid}'
+
+
 def create_new_user(user_id):
     insert(Tables.user_table, [(user_id, '', 1, 0, 'False', 0, 0)])
 
@@ -103,18 +119,31 @@ def set_progress(user_id, progress_point):
 
 
 def set_current(user_id, current_state):
-    q = f'UPDATE {Tables.user_table} SET current_position = {current_state} WHERE user_id = {user_id}'
+    q = f'UPDATE {Tables.user_table} ' \
+        f'SET current_position = {current_state} ' \
+        f'WHERE user_id = {user_id}'
     send_query(q)
 
 
 def update_name(user_id, name):
-    q = f'UPDATE {Tables.user_table} SET user_name = \'{name}\' WHERE user_id = {user_id}'
+    q = f'UPDATE {Tables.user_table} ' \
+        f'SET user_name = \'{name}\' ' \
+        f'WHERE user_id = {user_id}'
     send_query(q)
 
 
 def update_existing_task(task):
-    q = f'UPDATE {Tables.task_table} SET text = \'{task.text}\', picture_link = \'{task.picture_link}\',' \
-        f' question = \'{task.question}\', section_id = {task.section_id} WHERE task_id = {task.task_id}'
+    q = f'UPDATE {Tables.task_table} ' \
+        f'SET text = \'{task.text}\', picture_link = \'{task.picture_link}\', ' \
+        f'question = \'{task.question}\', section_id = {task.section_id} ' \
+        f'WHERE task_id = {task.task_id}'
+    send_query(q)
+
+
+def update_existing_section(section):
+    q = f'UPDATE {Tables.sections_table} ' \
+        f'SET section_name = \'{section.section_name}\' ' \
+        f'WHERE section_id = {section.section_id}'
     send_query(q)
 
 
@@ -141,6 +170,12 @@ def get_all_tasks():
     return answer
 
 
+def get_all_instances(unit_type):
+    q = f'SELECT * FROM {units.Units.unit_dict[unit_type].db_table}'
+    answer = send_query(q)
+    return answer
+
+
 def add_new_task(task):
     q = f'SELECT MAX(task_id) FROM {Tables.task_table}'
     answer = send_query(q)
@@ -155,16 +190,7 @@ def add_new_task(task):
     return task_id
 
 
-def get_task_by_id(task_id):
-    q = f'SELECT * FROM {Tables.task_table} WHERE task_id = {task_id}'
-    answer = send_query(q)
-    return answer
 
-
-def get_section_by_id(section_id):
-    q = f'SELECT * FROM {Tables.sections_table} WHERE task_id = {section_id}'
-    answer = send_query(q)
-    return answer
 
 
 def get_learning_tracks_list():
@@ -233,4 +259,11 @@ def delete_task(task_id):
     q = f'DELETE FROM {Tables.task_table} WHERE task_id = {task_id}'
     send_query(q)
     q = f'DELETE FROM {Tables.task_answers_table} WHERE task_id = {task_id}'
+    send_query(q)
+
+
+def delete_section(section_id):
+    q = f'DELETE FROM {Tables.sections_table} WHERE section_id = {section_id}'
+    send_query(q)
+    q = f'UPDATE {Tables.task_table} SET section_id = 0 WHERE section_id = {section_id}'
     send_query(q)
