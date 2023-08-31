@@ -133,9 +133,9 @@ def add_question(user_id, user_state, *data):
             person.working_on_add = None
             if person.working_on is not None and type(person.working_on) == task.Task:
                 if person.working_on.state == task.ChangeState.adding_question_in_manage:
-                    return task.await_question(person.working_on, nav.change_existing_task)
+                    return person.working_on.await_question(nav.change_existing_task)
                 else:
-                    return task.await_question(person.working_on, nav.add_task_menu)
+                    return person.working_on.await_question(nav.add_task_menu)
 
     if question_state.state == QuestionState.await_add_correct:
         add_text = ''

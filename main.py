@@ -5,6 +5,7 @@ from telegram import Update
 import keys
 import program
 from database import db, db_connection
+from instances import units
 
 logging.basicConfig(format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])',
                     datefmt='%d/%m/%Y %I:%M:%S %p',
@@ -59,6 +60,7 @@ if __name__ == '__main__':
     dp.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     #dp.add_error_handler(error)
+    units.Units()
 
     dp.run_polling(poll_interval=3)
 

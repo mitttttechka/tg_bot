@@ -2,6 +2,7 @@ from database import db_connection
 import logging
 from instances import units
 
+
 def send_query(query):
     logging.warning(query)
     answer = db_connection.send_query(query)
@@ -39,16 +40,16 @@ def renew_database():
         f"CREATE TABLE {Tables.tests_table} (test_id integer, task_id integer, sort integer); " \
         f"CREATE TABLE {Tables.test_rule_table} (track_id integer, section_id integer," \
         f" number_tasks integer, sort integer); " \
-        f"CREATE TABLE {Tables.sections_table} (section_id integer, section_name varchar(30)); " \
+        f"CREATE TABLE {Tables.sections_table} (id integer, section_name varchar(30)); " \
         f"INSERT INTO {Tables.sections_table} VALUES (0, 'default'); " \
-        f"CREATE TABLE {Tables.task_table} (task_id integer, text text, picture_link text, " \
+        f"CREATE TABLE {Tables.task_table} (id integer, text text, picture_link text, " \
         f"question boolean, section_id integer); " \
         f"INSERT INTO {Tables.task_table} VALUES (0, 'default', 'NONE', FALSE, 0); " \
         f"INSERT INTO {Tables.task_table} VALUES (1, 'theme 1', 'NONE', FALSE, 0); " \
         f"INSERT INTO {Tables.task_table} VALUES (2, 'theme 2', 'NONE', TRUE, 0); " \
         f"CREATE TABLE {Tables.statistics_table} (user_id bigint, test_id integer, correct boolean, " \
         f"dt timestamp DEFAULT current_timestamp); " \
-        f"CREATE TABLE {Tables.task_answers_table} (task_id integer, answer text, correct boolean); " \
+        f"CREATE TABLE {Tables.task_answers_table} (id integer, answer text, correct boolean); " \
         f"CREATE TABLE {Tables.learning_track_table} (track_id integer, sort integer, task_id integer); " \
         f"INSERT INTO {Tables.learning_track_table} VALUES (0, 0, 0); " \
         f"INSERT INTO {Tables.learning_track_table} VALUES (0, 1, 1); " \
@@ -94,20 +95,21 @@ def get_user(user_id):
 
 
 def get_task_by_id(task_id):
-    q = f'SELECT * FROM {Tables.task_table} WHERE task_id = {task_id}'
+    q = f'SELECT * FROM {Tables.task_table} WHERE id = {task_id}'
     answer = send_query(q)
     return answer
 
 
 def get_section_by_id(section_id):
-    q = f'SELECT * FROM {Tables.sections_table} WHERE section_id = {section_id}'
+    q = f'SELECT * FROM {Tables.sections_table} WHERE id = {section_id}'
     answer = send_query(q)
     return answer
 
 
 def get_info_by_id(uid, unit_type):
     q = f'SELECT * FROM {units.Units.unit_dict[unit_type].db_table} WHERE id = {uid}'
-
+    answer = send_query(q)
+    return answer
 
 def create_new_user(user_id):
     insert(Tables.user_table, [(user_id, '', 1, 0, 'False', 0, 0)])
@@ -136,19 +138,19 @@ def update_existing_task(task):
     q = f'UPDATE {Tables.task_table} ' \
         f'SET text = \'{task.text}\', picture_link = \'{task.picture_link}\', ' \
         f'question = \'{task.question}\', section_id = {task.section_id} ' \
-        f'WHERE task_id = {task.task_id}'
+        f'WHERE id = {task.uid}'
     send_query(q)
 
 
 def update_existing_section(section):
     q = f'UPDATE {Tables.sections_table} ' \
-        f'SET section_name = \'{section.section_name}\' ' \
-        f'WHERE section_id = {section.section_id}'
+        f'SET section_name = \'{section.text}\' ' \
+        f'WHERE id = {section.uid}'
     send_query(q)
 
 
 def add_new_section(text):
-    q = f'SELECT MAX(section_id) FROM {Tables.sections_table}'
+    q = f'SELECT MAX(id) FROM {Tables.sections_table}'
     answer = send_query(q)
     new_section_id = int(answer[0][0]) + 1
     q = f'INSERT INTO {Tables.sections_table} VALUES (' \
@@ -177,7 +179,7 @@ def get_all_instances(unit_type):
 
 
 def add_new_task(task):
-    q = f'SELECT MAX(task_id) FROM {Tables.task_table}'
+    q = f'SELECT MAX(id) FROM {Tables.task_table}'
     answer = send_query(q)
     task_id = int(answer[0][0]) + 1
     q = f'INSERT INTO {Tables.task_table} VALUES (' \
@@ -188,9 +190,6 @@ def add_new_task(task):
         f'{task.section_id})'
     send_query(q)
     return task_id
-
-
-
 
 
 def get_learning_tracks_list():
@@ -223,7 +222,7 @@ def get_learning_track_name(track_id):
 
 
 def get_section_name(section):
-    q = f'SELECT section_name FROM {Tables.sections_table} WHERE section_id = {str(section)}'
+    q = f'SELECT section_name FROM {Tables.sections_table} WHERE id = {str(section)}'
     answer = send_query(q)
     return answer
 
@@ -238,13 +237,13 @@ def add_new_learning_track(track_name):
 
 
 def get_answers(task_id):
-    q = f'SELECT answer, correct FROM {Tables.task_answers_table} WHERE task_id = {str(task_id)}'
+    q = f'SELECT answer, correct FROM {Tables.task_answers_table} WHERE id = {str(task_id)}'
     answer = send_query(q)
     return answer
 
 
 def set_answers(task_id, correct, incorrect):
-    q = f'DELETE FROM {Tables.task_answers_table} WHERE task_id = {task_id}'
+    q = f'DELETE FROM {Tables.task_answers_table} WHERE id = {task_id}'
     send_query(q)
     q = f'INSERT INTO {Tables.task_answers_table} VALUES '
     for answer in correct:
@@ -256,14 +255,19 @@ def set_answers(task_id, correct, incorrect):
 
 
 def delete_task(task_id):
-    q = f'DELETE FROM {Tables.task_table} WHERE task_id = {task_id}'
+    q = f'DELETE FROM {Tables.task_table} WHERE id = {task_id}'
     send_query(q)
-    q = f'DELETE FROM {Tables.task_answers_table} WHERE task_id = {task_id}'
+    q = f'DELETE FROM {Tables.task_answers_table} WHERE id = {task_id}'
     send_query(q)
 
 
 def delete_section(section_id):
-    q = f'DELETE FROM {Tables.sections_table} WHERE section_id = {section_id}'
+    q = f'DELETE FROM {Tables.sections_table} WHERE id = {section_id}'
     send_query(q)
     q = f'UPDATE {Tables.task_table} SET section_id = 0 WHERE section_id = {section_id}'
+    send_query(q)
+
+# TODO delete from connected tables
+def delete_instance(uid, unit_type):
+    q = f'DELETE FROM {units.Units.unit_dict[unit_type].db_table} WHERE id = {uid}'
     send_query(q)

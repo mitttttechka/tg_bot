@@ -106,7 +106,7 @@ def get_all_sections():
 def db_answer_to_sections_array(sections_array):
     sections = []
     for section in sections_array:
-        t = Section(section[0], section[1])
+        t = Test(section[0], section[1])
         sections.append(t)
     return sections
 
