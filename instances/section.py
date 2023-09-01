@@ -1,7 +1,7 @@
 import logging
 
 from database import db
-from instances import user, question, instance
+from instances import instance
 import menu_navigation as nav
 
 
@@ -29,7 +29,6 @@ class Section(instance.Instance):
             self.text = section_id[1]
             self.state = ChangeState.normal
         else:
-            self.text = None
             self.state = ChangeState.new_section
 
     def update(self, section_id):

@@ -267,6 +267,7 @@ def delete_section(section_id):
     q = f'UPDATE {Tables.task_table} SET section_id = 0 WHERE section_id = {section_id}'
     send_query(q)
 
+
 # TODO delete from connected tables
 def delete_instance(uid, unit_type):
     q = f'DELETE FROM {units.Units.unit_dict[unit_type].db_table} WHERE id = {uid}'

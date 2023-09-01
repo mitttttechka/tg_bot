@@ -129,7 +129,7 @@ def admin_menu():
                 ["Manage classes", f'{nav.manage_classes_menu}'],
                 ["Manage sections", f'{nav.manage_sections_menu}'],
                 ["Manage tests", f'{nav.manage_tests_menu}'],
-                ["Manage learning_tracks", f'{nav.manage_learning_track_menu}']]
+                ["Manage learning_tracks", f'{nav.learning_tracks_menu}']]
     return f"Admin menu / {nav.admin_menu}", keyboard
 
 
@@ -161,16 +161,17 @@ def manage_sections_menu():
     return f"Manage sections menu / {nav.manage_sections_menu}", keyboard
 
 
-def manage_tests_menu():
-    keyboard = [["Change test rules", f'{nav.change_test_rules}'],
-                ["Manage prescripted tests by id", f'{nav.manage_tests_menu}'],
-                ["Back", f'{nav.admin_menu}']]
-    return f"Manage tests menu / {nav.manage_tests_menu}", keyboard
-
-
 def learning_tracks_menu():
     keyboard = [["Add learning track", f'{nav.add_learning_track_menu}'],
                 ["Change existing learning track", f'{nav.manage_learning_track_menu}'],
+                ["Back", f'{nav.admin_menu}']]
+    return f"Learning tracks menu / {nav.learning_tracks_menu}", keyboard
+
+
+def manage_tests_menu():
+    keyboard = [["Add prescripted test", f'{nav.add_test_menu}'],
+                ["Change existing prescripted test", f'{nav.change_existing_test_menu}'],
+                ["Manage test rules", f'{nav.change_test_rules_menu}'],
                 ["Back", f'{nav.admin_menu}']]
     return f"Learning tracks menu / {nav.learning_tracks_menu}", keyboard
 
