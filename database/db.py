@@ -21,6 +21,7 @@ class Tables:
     students_table = 'students'
     class_table = 'class'
     track_id_name_table = 'track_id_name'
+    test_id_name_table = 'test_id_name'
 
 
 # TODO for every class pending 0 and default values not to show them
@@ -37,7 +38,9 @@ def renew_database():
         f"DROP TABLE {Tables.user_table};" \
         f"DROP TABLE {Tables.class_table};" \
         f"DROP TABLE {Tables.track_id_name_table};" \
-        f"CREATE TABLE {Tables.tests_table} (test_id integer, task_id integer, sort integer); " \
+        f"DROP TABLE {Tables.test_id_name_table};" \
+        f"CREATE TABLE {Tables.tests_table} (id integer, task_id integer, sort integer); " \
+        f"INSERT INTO {Tables.tests_table} VALUES (0, 0, 0); " \
         f"CREATE TABLE {Tables.test_rule_table} (track_id integer, section_id integer," \
         f" number_tasks integer, sort integer); " \
         f"CREATE TABLE {Tables.sections_table} (id integer, section_name varchar(30)); " \
@@ -47,20 +50,22 @@ def renew_database():
         f"INSERT INTO {Tables.task_table} VALUES (0, 'default', 'NONE', FALSE, 0); " \
         f"INSERT INTO {Tables.task_table} VALUES (1, 'theme 1', 'NONE', FALSE, 0); " \
         f"INSERT INTO {Tables.task_table} VALUES (2, 'theme 2', 'NONE', TRUE, 0); " \
-        f"CREATE TABLE {Tables.statistics_table} (user_id bigint, test_id integer, correct boolean, " \
+        f"CREATE TABLE {Tables.statistics_table} (id bigint, test_id integer, correct boolean, " \
         f"dt timestamp DEFAULT current_timestamp); " \
         f"CREATE TABLE {Tables.task_answers_table} (id integer, answer text, correct boolean); " \
-        f"CREATE TABLE {Tables.learning_track_table} (track_id integer, sort integer, task_id integer); " \
+        f"CREATE TABLE {Tables.learning_track_table} (id integer, sort integer, task_id integer); " \
         f"INSERT INTO {Tables.learning_track_table} VALUES (0, 0, 0); " \
         f"INSERT INTO {Tables.learning_track_table} VALUES (0, 1, 1); " \
         f"INSERT INTO {Tables.learning_track_table} VALUES (0, 2, 2); " \
-        f"CREATE TABLE {Tables.track_id_name_table} (track_id integer, track_name varchar(30)); " \
+        f"CREATE TABLE {Tables.track_id_name_table} (id integer, track_name varchar(30)); " \
         f"INSERT INTO {Tables.track_id_name_table} VALUES (0, \'default track\'); " \
-        f"CREATE TABLE {Tables.students_table} (user_id bigint, track_id integer, sort integer); " \
-        f"CREATE TABLE {Tables.user_table} (user_id bigint, user_name varchar(30), type integer DEFAULT 1, " \
+        f"CREATE TABLE {Tables.test_id_name_table} (id integer, test_name varchar(30)); " \
+        f"INSERT INTO {Tables.test_id_name_table} VALUES (0, \'default test\'); " \
+        f"CREATE TABLE {Tables.students_table} (id bigint, track_id integer, sort integer); " \
+        f"CREATE TABLE {Tables.user_table} (id bigint, user_name varchar(30), type integer DEFAULT 1, " \
         f"class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0, " \
         f"current_position integer DEFAULT 0); " \
-        f"CREATE TABLE {Tables.class_table} (class_id integer, class_name text);"
+        f"CREATE TABLE {Tables.class_table} (id integer, class_name text);"
     send_query(q)
 
 
@@ -89,7 +94,7 @@ def select(table, *values):
 
 
 def get_user(user_id):
-    q = f'SELECT * FROM {Tables.user_table} WHERE user_id = {user_id}'
+    q = f'SELECT * FROM {Tables.user_table} WHERE id = {user_id}'
     answer = send_query(q)
     return answer
 
@@ -116,21 +121,21 @@ def create_new_user(user_id):
 
 
 def set_progress(user_id, progress_point):
-    q = f'UPDATE {Tables.user_table} SET progress_point = {progress_point} WHERE user_id = {user_id}'
+    q = f'UPDATE {Tables.user_table} SET progress_point = {progress_point} WHERE id = {user_id}'
     send_query(q)
 
 
 def set_current(user_id, current_state):
     q = f'UPDATE {Tables.user_table} ' \
         f'SET current_position = {current_state} ' \
-        f'WHERE user_id = {user_id}'
+        f'WHERE id = {user_id}'
     send_query(q)
 
 
 def update_name(user_id, name):
     q = f'UPDATE {Tables.user_table} ' \
         f'SET user_name = \'{name}\' ' \
-        f'WHERE user_id = {user_id}'
+        f'WHERE id = {user_id}'
     send_query(q)
 
 
@@ -193,30 +198,30 @@ def add_new_task(task):
 
 
 def get_learning_tracks_list():
-    q = f'SELECT track_id, track_name FROM {Tables.track_id_name_table}'
+    q = f'SELECT id, track_name FROM {Tables.track_id_name_table}'
     answer = send_query(q)
     return answer
 
 
 def get_learning_track(track_id):
-    q = f'SELECT sort, task_id FROM {Tables.learning_track_table} WHERE track_id = {str(track_id)}'
+    q = f'SELECT sort, task_id FROM {Tables.learning_track_table} WHERE id = {str(track_id)}'
     answer = send_query(q)
     return answer
 
 
-def update_learning_track(track_id, sort):
-    q = f'DELETE FROM {Tables.learning_track_table} WHERE track_id = {track_id}'
+def update_sorting(uid, sort, unit_type):
+    q = f'DELETE FROM {units.Units.unit_dict[unit_type].db_table} WHERE id = {uid}'
     send_query(q)
     if len(sort) > 0:
-        q = f'INSERT INTO {Tables.learning_track_table} VALUES '
+        q = f'INSERT INTO {units.Units.unit_dict[unit_type].db_table} VALUES '
         for i in range(len(sort)):
-            q += f'({track_id}, {i}, {sort[i]}), '
+            q += f'({uid}, {i}, {sort[i]}), '
         q = q[0:len(q) - 2]
         send_query(q)
 
 
 def get_learning_track_name(track_id):
-    q = f'SELECT track_name FROM {Tables.track_id_name_table} WHERE track_id = {str(track_id)}'
+    q = f'SELECT track_name FROM {Tables.track_id_name_table} WHERE id = {str(track_id)}'
     answer = send_query(q)
     return answer
 
@@ -228,12 +233,21 @@ def get_section_name(section):
 
 
 def add_new_learning_track(track_name):
-    q = f'SELECT MAX(track_id) FROM {Tables.track_id_name_table}'
+    q = f'SELECT MAX(id) FROM {Tables.track_id_name_table}'
     answer = send_query(q)
     track_id = int(answer[0][0]) + 1
     q = f'INSERT INTO {Tables.track_id_name_table} VALUES ({track_id}, \'{track_name}\')'
     send_query(q)
     return track_id
+
+
+def add_new_test(test_name):
+    q = f'SELECT MAX(id) FROM {Tables.test_id_name_table}'
+    answer = send_query(q)
+    test_id = int(answer[0][0]) + 1
+    q = f'INSERT INTO {Tables.test_id_name_table} VALUES ({test_id}, \'{test_name}\')'
+    send_query(q)
+    return test_id
 
 
 def get_answers(task_id):

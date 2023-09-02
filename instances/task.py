@@ -1,5 +1,3 @@
-import logging
-
 from database import db
 from instances import user, question, section, instance
 import menu_navigation as nav
@@ -70,7 +68,8 @@ class Task(instance.Instance):
     def change_question(self, need):
         self.question = need
 
-    def db_answer_to_instances_array(self, tasks_array):
+    @staticmethod
+    def db_answer_to_instances_array(tasks_array):
         tasks = []
         for task in tasks_array:
             t = Task(task[0], task[1], task[2], task[3], task[4])

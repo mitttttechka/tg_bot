@@ -38,7 +38,8 @@ class Section(instance.Instance):
         self.state = ChangeState.normal
         self.update_active_instances()
 
-    def db_answer_to_instances_array(self, sections_array):
+    @staticmethod
+    def db_answer_to_instances_array(sections_array):
         sections = []
         for section in sections_array:
             t = Section(section[0], section[1])

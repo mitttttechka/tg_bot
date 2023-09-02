@@ -30,7 +30,6 @@ add_class = 61
 find_class = 62
 add_section_request = 63
 find_section = 64
-change_test_rules = 65
 add_learning_track_menu = 66
 manage_learning_track_menu = 67
 change_existing_test_menu = 68

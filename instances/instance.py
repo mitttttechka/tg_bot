@@ -45,7 +45,7 @@ def get_instance(uid, unit_type):
         return units.Units.unit_dict[unit_type].statics[has_instance]
     instances_array = db.get_info_by_id(uid, unit_type)
     if len(instances_array) > 0:
-        db_instance = unit_type.db_answer_to_instances_array(None, instances_array)
+        db_instance = unit_type.db_answer_to_instances_array(instances_array)
         db_instance[0].update_active_instances()
         return db_instance[0]
     else:
@@ -57,7 +57,7 @@ def get_all_instances(unit_type):
             or (datetime.now() - units.Units.unit_dict[unit_type].last_updated).seconds > 120:
         instances_array = db.get_all_instances(unit_type)
         units.Units.unit_dict[unit_type].last_updated = datetime.now()
-        instances = unit_type.db_answer_to_instances_array(None, instances_array)
+        instances = unit_type.db_answer_to_instances_array(instances_array)
         for single_instance in instances:
             single_instance.update_active_instances()
     return units.Units.unit_dict[unit_type].statics

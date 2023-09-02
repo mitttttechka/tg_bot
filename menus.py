@@ -1,5 +1,5 @@
 import logging
-from instances import learning_track, question, user, task, section
+from instances import learning_track, question, user, task, section, test
 import menu_navigation as nav
 
 
@@ -54,6 +54,12 @@ def menu_navigation(data, user_id, original_data, text):
         return manage_learning_track(user_id, original_data, text)
     elif data == nav.add_question_menu:
         return add_question(user_id, original_data, text)
+    elif data == nav.add_test_menu:
+        return add_test(user_id, text)
+    elif data == nav.change_test_rules_menu:
+        return change_test_rules(user_id, original_data, text)
+    elif data == nav.change_existing_test_menu:
+        return change_test(user_id, original_data, text)
     else:
         return main_menu()
 
@@ -176,6 +182,28 @@ def manage_tests_menu():
     return f"Learning tracks menu / {nav.learning_tracks_menu}", keyboard
 
 
+def add_test(user_id, text):
+    if text is not None:
+        new_test_id = test.add_test(user_id, text)
+        response = menu_button_press(nav.change_existing_test_menu * 1000 + int(new_test_id), user_id)
+        return response
+    return "Please enter new test name", None
+
+
+def change_test(user_id, user_state, *text):
+    reply = test.manage_test(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
+    return mes, keyboard
+
+
+def change_test_rules(user_id, user_state, *text):
+    reply = test.manage_test_rules(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
+    return mes, keyboard
+
+
 def add_task(user_id, user_state, *text):
     reply = task.add_task(user_id, user_state, text)
     mes = reply[0]
@@ -236,4 +264,3 @@ def add_learning_track(user_id, text):
 def manage_learning_track(user_id, user_state, *text):
     reply = learning_track.manage_learning_track(user_id, user_state, text)
     return reply[0], reply[1]
-
