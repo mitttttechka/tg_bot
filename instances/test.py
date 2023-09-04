@@ -1,24 +1,7 @@
 from database import db
 from instances import user, instance, task
 import menu_navigation as nav
-
-
-class ChangeState:
-    empty = 0
-    normal = 1
-    new_test = 2
-    await_test = 3
-    await_current_sort = 4
-    await_change_current = 5
-    await_add_task_middle = 6
-    await_remove_task = 7
-    await_resort_existing = 8
-    await_set_position = 9
-    await_resort = 10
-    await_new_sort = 11
-    view_current = 12
-    update_test = 13
-    update_add_task_middle = 14
+import State as ChangeState
 
 
 class Test(instance.Instance):
@@ -49,15 +32,17 @@ class Test(instance.Instance):
         self.state = ChangeState.normal
         self.update_active_instances()
 
-    def change_sorting(self, new_sort):
-        self.sorting = new_sort
+    # def change_sorting(self, new_sort):
+    #     self.sorting = new_sort
 
-    def get_sort(self):
-        info = self.get_info()
-        sort = {}
-        for row in info:
-            sort[row[1]] = row[2]
-        return sort
+    # def get_sort(self):
+    #     if self.sorting is None:
+    #         info = self.get_info()
+    #         sort = {}
+    #         for row in info:
+    #             sort[row[1]] = row[2]
+    #         self.sorting = sort
+    #     return self.sorting
 
     def change_task(self, task_id):
         self.current_task = task_id
@@ -94,7 +79,7 @@ class Test(instance.Instance):
         mes = ''
         if len(add_text) > 0:
             mes += add_text[0]
-        mes += f'{self.text}\n{self.test_sort_message()}'
+        mes += f'{self.text}\n{self.sort_message_instance()}'
 
         keyboard = [('Add new task to the test', f'{nav.change_existing_test_menu}3'),
                     ('Remove task from the test', f'{nav.change_existing_test_menu}4'),
@@ -102,29 +87,29 @@ class Test(instance.Instance):
                     ("Back", f'{nav.manage_tests_menu}')]
         return mes, keyboard
 
-    def test_sort_message(self, *add_text):
-        sort = self.sorting
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
-        if len(sort) == 0:
-            mes = f'No tasks in the test yet.'
-        else:
-            mes += 'Sort: Task ID\n'
-        for i in range(len(sort)):
-            mes += f'{i}: task {sort[i]}\n'
-        return mes
+    # def test_sort_message(self, *add_text):
+    #     sort = self.sorting
+    #     mes = ''
+    #     if len(add_text) > 0:
+    #         mes += add_text[0]
+    #     if len(sort) == 0:
+    #         mes = f'No tasks in the test yet.'
+    #     else:
+    #         mes += 'Sort: Task ID\n'
+    #     for i in range(len(sort)):
+    #         mes += f'{i}: task {sort[i]}\n'
+    #     return mes
 
         # TODO show only questions
 
-    def await_add_task_middle(self, *add_text):
-        self.change_state(ChangeState.await_add_task_middle)
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
-        mes += 'Write Question ID to add to the test:\n'
-        mes = instance.all_instances_message(task.Task, mes)  # task.all_tasks_message(mes)
-        return mes, None
+    # def await_add_task_middle(self, *add_text):
+    #     self.change_state(ChangeState.await_add_task_middle)
+    #     mes = ''
+    #     if len(add_text) > 0:
+    #         mes += add_text[0]
+    #     mes += 'Write Question ID to add to the test:\n'
+    #     mes = instance.all_instances_message(task.Task, mes)  # task.all_tasks_message(mes)
+    #     return mes, None
 
     def set_position_menu(self, data):
         self.update_set_position(data)
@@ -139,58 +124,57 @@ class Test(instance.Instance):
         return self.await_set_position()
 
     def update_add_task_middle(self, text):
-        try:
-            task_id = int(text)
-        except:
-            return self.await_add_task_middle('Incorrect Task ID. Please try again\n')
-        if not instance.instance_exists(task_id, task.Task):  # task.task_exists(task_id):
-            return self.await_add_task_middle('Task ID doesn\'t exist. Please try again\n')
-        self.change_state(ChangeState.update_add_task_middle)
-        self.change_task(task_id)
+        # try:
+        #     task_id = int(text)
+        # except ValueError:
+        #     return self.await_add_task_middle_instance('Incorrect Task ID. Please try again\n')
+        # if not instance.instance_exists(task_id, task.Task):  # task.task_exists(task_id):
+        #     return self.await_add_task_middle_instance('Task ID doesn\'t exist. Please try again\n')
+        # self.change_state(ChangeState.update_add_task_middle)
+        result = self.update_add_task_middle_instance(text)
+        if type(result) is not int:
+            return result
+        self.change_task(result)
         return self
 
-    def await_remove_task(self, *add_text):
-        self.change_state(ChangeState.await_remove_task)
-        mes = ''
-        if len(add_text) > 0:
-            if type(add_text[0]) is str:
-                mes += add_text[0]
-        mes += self.test_sort_message('Write task position to remove from the test:\n')
-        return mes, None
+    # def await_remove_task(self, *add_text):
+    #     self.change_state(ChangeState.await_remove_task)
+    #     mes = ''
+    #     if len(add_text) > 0:
+    #         if type(add_text[0]) is str:
+    #             mes += add_text[0]
+    #     mes += self.sort_message_instance('Write task position to remove from the test:\n')
+    #     return mes, None
 
-    def await_resort_existing(self, *add_text):
-        answer = self.await_remove_task(add_text)
-        self.change_state(ChangeState.await_resort_existing)
-        return answer
+    # def await_resort_existing(self, *add_text):
+    #     answer = self.await_remove_task_instance(add_text)
+    #     self.change_state(ChangeState.await_resort_existing)
+    #     return answer
 
-    def update_change_current(self, user_state):
-        if user_state[2] == '3':
-            return self.await_add_task_middle()
-        elif user_state[2] == '4':
-            return self.await_remove_task()
-        elif user_state[2] == '5':
-            return self.await_resort_existing()
+    # def update_change_current(self, user_state):
+    #     if user_state[2] == '3':
+    #         return self.await_add_task_middle_instance()
+    #     elif user_state[2] == '4':
+    #         return self.await_remove_task_instance()
+    #     elif user_state[2] == '5':
+    #         return self.await_resort_existing_instance()
 
     def update_resort_existing(self, text):
-        try:
-            position = int(text)
-        except:
-            return self.await_resort_existing('Incorrect position. Please try again\n')
-        sort = self.get_sort()
-        task_id = sort[position]
-
-        self.change_task(task_id)
+        answer = self.update_resort_existing_instance(text)
+        if not isinstance(answer, int):
+            return answer
+        self.change_task(answer)
         return self
 
-    def update_remove_task(self, text):
-        try:
-            position = int(text)
-        except:
-            return self.await_remove_task('Incorrect position. Please try again\n')
-
-        new_sort = self.remove_position_from_sort(position)
-
-        return self.update_sort(new_sort)
+    # def update_remove_task(self, text):
+    #     try:
+    #         position = int(text)
+    #     except ValueError:
+    #         return self.await_remove_task_instance('Incorrect position. Please try again\n')
+    #
+    #     new_sort = self.remove_position_from_sort_instance(position)
+    #
+    #     return self.change_sorting(new_sort)
 
     def new_sort_menu(self, user_state, data):
         if user_state is not None and len(user_state) == 4:
@@ -240,7 +224,7 @@ class Test(instance.Instance):
 
     def view_current_sort(self):
         self.change_state(ChangeState.view_current)
-        mes = self.test_sort_message('')
+        mes = self.sort_message_instance('')
         keyboard = [('Back to editing', f'{nav.change_existing_test_menu}2')]
         return mes, keyboard
 
@@ -263,10 +247,10 @@ class Test(instance.Instance):
         answer = self.update_add_task_middle(text)
         if type(answer) is not Test:
             return self, 'Incorrect Task ID. Please try again\n'
-        if self.sorting is None:
+        if self.get_sort() is None:
             sort_id = 0
         else:
-            sort_id = len(self.sorting)
+            sort_id = len(self.get_sort())
         self.update_set_position(sort_id + 1)
         return self, 'Task was added to the new sorting.\n'
 
@@ -278,65 +262,65 @@ class Test(instance.Instance):
     # TODO add opportunity to delete track
     def await_current_sort(self, *add_text):
         self.change_state(ChangeState.await_current_sort)
-        mes = self.test_sort_message(add_text)
+        mes = self.sort_message_instance(add_text)
         self.change_text(mes)
         keyboard = [('Change current sort', f'{nav.change_existing_test_menu}1'),
                     ('Make new sort from zero', f'{nav.change_existing_test_menu}2'),
                     ("Back", f'{nav.change_existing_test_menu}')]
         return mes, keyboard
 
-    def remove_position_from_sort(self, position):
-        sort = self.get_sort()
-        new_sort = {}
+    # def remove_position_from_sort(self, position):
+    #     sort = self.get_sort()
+    #     new_sort = {}
+    #
+    #     if position >= len(sort):
+    #         position = len(sort) - 1
+    #     if position < 0:
+    #         position = 0
+    #
+    #     for i in range(position):
+    #         new_sort[i] = sort[i]
+    #     for i in range(position + 1, len(sort)):
+    #         new_sort[i - 1] = sort[i]
+    #
+    #     return new_sort
 
-        if position >= len(sort):
-            position = len(sort) - 1
-        if position < 0:
-            position = 0
+    # def await_set_position(self, *add_text):
+    #     self.change_state(ChangeState.await_set_position)
+    #     mes = ''
+    #     if len(add_text) > 0:
+    #         mes += add_text[0]
+    #     mes += f'To which position do you want to insert task {self.current_task}\n'
+    #     mes += self.get_sort()
+    #     return mes, None
 
-        for i in range(position):
-            new_sort[i] = sort[i]
-        for i in range(position + 1, len(sort)):
-            new_sort[i - 1] = sort[i]
+    # def update_set_position(self, text):
+    #     try:
+    #         l_position = int(text)
+    #     except ValueError:
+    #         return self.await_add_task_middle_instance('Incorrect position. Please try again\n')
+    #
+    #     sort = self.get_sort()
+    #     new_sort = {}
+    #
+    #     if l_position > len(sort):
+    #         l_position = len(sort)
+    #     if l_position < 0:
+    #         l_position = 0
+    #
+    #     for i in range(l_position):
+    #         new_sort[i] = sort[i]
+    #     new_sort[l_position] = self.current_task
+    #     for i in range(l_position, len(sort)):
+    #         new_sort[i + 1] = sort[i]
+    #
+    #     self.change_sorting(new_sort)
+    #     return self
 
-        return new_sort
-
-    def await_set_position(self, *add_text):
-        self.change_state(ChangeState.await_set_position)
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
-        mes += f'To which position do you want to insert task {self.current_task}\n'
-        mes += self.text
-        return mes, None
-
-    def update_set_position(self, text):
-        try:
-            l_position = int(text)
-        except:
-            return self.await_add_task_middle('Incorrect position. Please try again\n')
-
-        sort = self.get_sort()
-        new_sort = {}
-
-        if l_position > len(sort):
-            l_position = len(sort)
-        if l_position < 0:
-            l_position = 0
-
-        for i in range(l_position):
-            new_sort[i] = sort[i]
-        new_sort[l_position] = self.current_task
-        for i in range(l_position, len(sort)):
-            new_sort[i + 1] = sort[i]
-
-        self.update_sort(new_sort)
-        return self
-
-    def update_sort(self, new_sort):
-        self.change_sorting(new_sort)
-        self.change_text(self.test_sort_message(''))
-        return self
+    # def update_sort(self, new_sort):
+    #     self.change_sorting(new_sort)
+    #     self.change_text(self.sort_message_instance(''))
+    #     return self
 
 
 def add_test(user_id, text):

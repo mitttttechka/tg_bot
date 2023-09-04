@@ -1,3 +1,18 @@
+from instances import learning_track
+
+a = learning_track.LearningTrack()
+print(type(a).__name__)
+
+# a = (())
+# if a:
+#     print('1')
+
+
+
+
+
+
+'''
 class A:
     def __init__(self):
         self.a = 3
@@ -692,3 +707,4 @@ def delete_section(section_state):
 def updating_existing_section(section_state):
     db.update_existing_section(section_state)
     update_active_sections(section_state)
+'''

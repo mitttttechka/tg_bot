@@ -1,8 +1,9 @@
 import logging
 
 from database import db
-from instances import user, units
+from instances import user, units, task
 from datetime import datetime
+import State as ChangeState
 
 
 class Instance:
@@ -12,9 +13,14 @@ class Instance:
         self.text = None
         self.state = None
         self.type = None
+        self.sorting = None
 
     def get_info(self):
-        return db.get_info_by_id(self.uid, self.type)[0]
+        ans = db.get_info_by_id(self.uid, self.type)
+        if len(ans) > 0:
+            return ans[0]
+        else:
+            return []
 
     def change_id(self, uid):
         self.uid = uid
@@ -25,6 +31,19 @@ class Instance:
     def change_text(self, text):
         self.text = text
 
+    def get_sort(self):
+        if self.sorting is None:
+            info = self.get_info()
+            sort = {}
+            for row in info:
+                sort[row[1]] = row[2]
+            self.sorting = sort
+        return self.sorting
+
+    def change_sorting(self, new_sort):
+        self.sorting = new_sort
+
+
     def update_active_instances(self):
         index = find_instance_in_static(self.uid, self.type)
         if index == -1:
@@ -34,11 +53,132 @@ class Instance:
             units.Units.unit_dict[self.type].statics[index] = self
         # TODO add async update to database
 
+    def await_add_task_middle_instance(self, *add_text):
+        self.change_state(ChangeState.await_add_task_middle)
+        mes = ''
+        if len(add_text) > 0:
+            mes += add_text[0]
+        mes += 'Write Task ID to add:\n'
+        mes = all_instances_message(task.Task, mes)  # task.all_tasks_message(mes)
+        return mes, None
+
+    def sort_message_instance(self, *add_text):
+        sort = self.get_sort()
+        mes = ''
+        if len(add_text[0]):#len(add_text) > 0:
+            mes += add_text[0][0]
+        if len(sort) == 0:
+            mes = f'No tasks added yet.'
+        else:
+            mes += 'Sort: Task ID\n'
+        for i in range(len(sort)):
+            mes += f'{i}: task {sort[i]}\n'
+        return mes
+
+    def update_add_task_middle_instance(self, text):
+        try:
+            task_id = int(text)
+        except ValueError:
+            return self.await_add_task_middle_instance('Incorrect Task ID. Please try again\n')
+        if not instance_exists(task_id, task.Task):  # task.task_exists(task_id):
+            return self.await_add_task_middle_instance('Task ID doesn\'t exist. Please try again\n')
+        self.change_state(ChangeState.update_add_task_middle)
+        return task_id
+
+    def await_remove_task_instance(self, *add_text):
+        self.change_state(ChangeState.await_remove_task)
+        mes = ''
+        if len(add_text) > 0:
+            if type(add_text[0]) is str:
+                mes += add_text[0]
+        mes += self.sort_message_instance(f'Write task position to remove from the {self.type.__name__}:\n')
+        return mes, None
+
+    def remove_position_from_sort_instance(self, position):
+        sort = self.get_sort()
+        new_sort = {}
+
+        if position >= len(sort):
+            position = len(sort) - 1
+        if position < 0:
+            position = 0
+
+        for i in range(position):
+            new_sort[i] = sort[i]
+        for i in range(position + 1, len(sort)):
+            new_sort[i - 1] = sort[i]
+
+        return new_sort
+
+    def await_resort_existing_instance(self, *add_text):
+        answer = self.await_remove_task_instance(add_text)
+        self.change_state(ChangeState.await_resort_existing)
+        return answer
+
+    def update_resort_existing_instance(self, text):
+        try:
+            position = int(text)
+        except ValueError:
+            return self.await_resort_existing_instance('Incorrect position. Please try again\n')
+        sort = self.get_sort()
+        task_id = sort[position]
+        return task_id
+
+    def update_change_current_instance(self, user_state):
+        if user_state[2] == '3':
+            return self.await_add_task_middle_instance()
+        elif user_state[2] == '4':
+            return self.await_remove_task_instance()
+        elif user_state[2] == '5':
+            return self.await_resort_existing_instance()
+
+    def update_set_position(self, text, s_task):
+        try:
+            l_position = int(text)
+        except ValueError:
+            return self.await_add_task_middle_instance('Incorrect position. Please try again\n')
+
+        sort = self.get_sort()
+        new_sort = {}
+
+        if l_position > len(sort):
+            l_position = len(sort)
+        if l_position < 0:
+            l_position = 0
+
+        for i in range(l_position):
+            new_sort[i] = sort[i]
+        new_sort[l_position] = s_task
+        for i in range(l_position, len(sort)):
+            new_sort[i + 1] = sort[i]
+
+        self.change_sorting(new_sort)
+        return self
+
+    def await_set_position(self, *add_text):
+        self.change_state(ChangeState.await_set_position)
+        mes = ''
+        if len(add_text) > 0:
+            mes += add_text[0]
+        mes += f'To which position do you want to insert task {self.current_task}\n'
+        mes += self.sort_message_instance()
+        return mes, None
+
+    def update_remove_task(self, text):
+        try:
+            position = int(text)
+        except ValueError:
+            return self.await_remove_task_instance('Incorrect position. Please try again\n')
+
+        new_sort = self.remove_position_from_sort_instance(position)
+
+        return self.change_sorting(new_sort)
+
 
 def get_instance(uid, unit_type):
     try:
         uid = int(uid)
-    except:
+    except ValueError:
         return None
     has_instance = find_instance_in_static(uid, unit_type)
     if has_instance != -1:
@@ -73,12 +213,12 @@ def form_instances_message(instances, *add_text):
     return mes
 
 
-def db_answer_to_instances_array(instances_array):
-    instances = []
-    for instance in instances_array:
-        t = Instance()
-        instances.append(t)
-    return instances
+# def db_answer_to_instances_array(instances_array):
+#     instances = []
+#     for instance in instances_array:
+#         t = Instance()
+#         instances.append(t)
+#     return instances
 
 
 def find_instance_in_static(uid, unit_type):
@@ -115,7 +255,7 @@ def delete_instance(instance_state):
 
 def get_existing_instance(instance_state, uid, unit_type):
     if not instance_exists(uid, unit_type):
-        return None #manage_instance_new_instance(instance_state, 'Task doesn\'t exist. Please try again.\n')
+        return None  # manage_instance_new_instance(instance_state, 'Task doesn\'t exist. Please try again.\n')
     instance_state.update(int(uid))
     return instance_state
 
