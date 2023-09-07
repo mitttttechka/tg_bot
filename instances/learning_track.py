@@ -5,33 +5,8 @@ from database import db
 import menu_navigation as nav
 import State as ChangeState
 
-# class ChangeState:
-#     empty = 0
-#     await_learn_track = 1
-#     update_learn_track = 2
-#     await_current_sort = 3
-#     update_current_sort = 4
-#     await_change_current = 5
-#     update_change_sort = 6
-#     await_add_task_middle = 7
-#     update_add_task_middle = 8
-#     await_remove_task = 9
-#     update_remove_task = 10
-#     await_resort_existing = 11
-#     update_resort_existing = 12
-#     await_new_sort = 13
-#     update_new_sort = 14
-#     await_add_task_end = 15
-#     update_add_task_end = 16
-#     normal = 17
-#     await_set_position = 18
-#     await_resort = 19
-#     view_current = 20
-
 
 # TODO del lists if don't need them
-# TODO instead of if param is type, isinstance(param, type)
-# TODO instead of check if None or len 0 just bool if a (false for none and empty)
 # TODO check if can apply .insert method to sorting
 class LearningTrack(instance.Instance):
 
@@ -42,26 +17,6 @@ class LearningTrack(instance.Instance):
             self.uid = track_id[0]
             self.sorting: dict = self.get_sort()
             self.state = ChangeState.normal
-            self.current_task = None
-        else:
-            self.sorting = None
-            self.state = ChangeState.empty
-            self.current_task = None
-
-    # def get_sort(self):
-    #     if self.sorting is None:
-    #         data = db.get_learning_track(self.uid)
-    #         sorted_dict = {}
-    #         for row in data:
-    #             sorted_dict[int(row[0])] = int(row[1])
-    #         self.sorting = sorted_dict
-    #     return self.sorting
-
-    def change_task(self, task_id):
-        self.current_task = task_id
-
-    # def change_sort(self, new_sort):
-    #     self.sorting = new_sort
 
     def new_sort_menu(self, user_state, data):
         if user_state is not None and len(user_state) == 4:
@@ -74,7 +29,7 @@ class LearningTrack(instance.Instance):
             else:
                 return self.await_change_current()
         if data is not None:
-            track_state, add_text = self.update_new_sort(data[0][0])
+            track_state, add_text = self.update_new_sort_instance(data[0][0])
             return track_state.await_new_sort(add_text)
 
     def resort_menu(self, data):
@@ -103,8 +58,8 @@ class LearningTrack(instance.Instance):
         return self.await_change_current(text)
 
     def update_task_middle(self, data):
-        result = self.update_add_task_middle(data)
-        if type(result) is not LearningTrack:
+        result = LearningTrack.update_add_task_middle(self, data)
+        if not isinstance(result, LearningTrack):
             return result
         return self.await_set_position()
 
@@ -115,14 +70,6 @@ class LearningTrack(instance.Instance):
             self.change_sorting({})
             return self.await_new_sort()
 
-    # def update_change_current(self, user_state):
-    #     if user_state[2] == '3':
-    #         return self.await_add_task_middle_instance()
-    #     elif user_state[2] == '4':
-    #         return self.await_remove_task_instance()
-    #     elif user_state[2] == '5':
-    #         return self.await_resort_existing()
-
     def view_current_sort(self):
         self.change_state(ChangeState.view_current)
         mes = self.sort_message_instance('')
@@ -132,31 +79,17 @@ class LearningTrack(instance.Instance):
     # TODO additional message are you sure
     def await_new_sort(self, *add_text):
         self.change_state(ChangeState.await_new_sort)
-        text = ''
-        if len(add_text) > 0:
-            text += add_text[0]
+        text = add_text[0] if len(add_text) > 0 else ''
         text += 'Write Task ID to add to the end of the new sorting\n'
-        mes = instance.all_instances_message(task.Task, text)  # task.all_tasks_message(text)
-        self.change_text(mes)
+        mes = instance.all_instances_message(task.Task, text)
         keyboard = [('View current new sorting', f'{nav.manage_learning_track_menu}21'),
                     ('Save sorting (OLD SORTING WILL BE DELETED)', f'{nav.manage_learning_track_menu}22'),
                     ("Back (PROGRESS WILL BE LOST)", f'{nav.manage_learning_track_menu}23')]
         return mes, keyboard
 
-    # TODO opportunity to input several tasks
-    def update_new_sort(self, text):
-        answer = self.update_add_task_middle(text)
-        if type(answer) is not LearningTrack:
-            return self, 'Incorrect Task ID. Please try again\n'
-        if self.sorting is None:
-            sort_id = 0
-        else:
-            sort_id = len(self.sorting)
-        self.update_set_position(sort_id + 1)
-        return self, 'Task was added to the new sorting.\n'
-
     def await_learning_track(self):
         self.change_state(ChangeState.await_learn_track)
+        # TODO change to instance
         tracks_list = get_all_learning_tracks()
         keyboard = []
         for track in tracks_list:
@@ -167,38 +100,19 @@ class LearningTrack(instance.Instance):
         mes = f"Please select learning track:"
         return mes, keyboard
 
-    def update_learn_track(self, user_state):
-        self.change_state(ChangeState.update_learn_track)
-        self.change_id(int(user_state[2:5]))
-        return self
-
     # TODO add opportunity to delete track
     def await_current_sort(self, *add_text):
         self.change_state(ChangeState.await_current_sort)
         mes = self.sort_message_instance(add_text)
-        self.change_text(mes)
+
         keyboard = [('Change current sort', f'{nav.manage_learning_track_menu}1'),
                     ('Make new sort from zero', f'{nav.manage_learning_track_menu}2'),
                     ("Back", f'{nav.learning_tracks_menu}')]
         return mes, keyboard
 
-    # def track_sort_message(self, add_text):
-    #     sort = self.get_sort()
-    #     mes = ''
-    #     if len(add_text) > 0:
-    #         mes += add_text[0]
-    #     mes += 'Sort: Task ID\n'
-    #     for i in range(len(sort)):
-    #         mes += f'{i}: task {sort[i]}\n'
-    #     if len(mes) == 0:
-    #         mes = f'No tasks in the learning track yet.'
-    #     return mes
-
     def await_change_current(self, *add_text):
         self.change_state(ChangeState.await_change_current)
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
+        mes = add_text[0] if len(add_text) > 0 else ''
         mes += f'{self.text}\n{self.sort_message_instance()}'
 
         keyboard = [('Add new task to the track', f'{nav.manage_learning_track_menu}3'),
@@ -207,115 +121,15 @@ class LearningTrack(instance.Instance):
                     ("Back", f'{nav.learning_tracks_menu}')]
         return mes, keyboard
 
-    # def await_add_task_middle(self, *add_text):
-    #     self.change_state(ChangeState.await_add_task_middle)
-    #     mes = ''
-    #     if len(add_text) > 0:
-    #         mes += add_text[0]
-    #     mes += 'Write Task ID to add to the learning track:\n'
-    #     mes = instance.all_instances_message(task.Task, mes)  # task.all_tasks_message(mes)
-    #     return mes, None
-
-    # def await_remove_task(self, *add_text):
-    #     self.change_state(ChangeState.await_remove_task)
-    #     mes = ''
-    #     if len(add_text) > 0:
-    #         if type(add_text[0]) is str:
-    #             mes += add_text[0]
-    #     mes += 'Write task position to remove from the learning track:\n'
-    #     mes += self.text
-    #     return mes, None
-
+    @staticmethod
     def update_add_task_middle(self, text):
-        # try:
-        #     task_id = int(text)
-        # except ValueError:
-        #     return self.await_add_task_middle_instance('Incorrect Task ID. Please try again\n')
-        # if not instance.instance_exists(task_id, task.Task):  # task.task_exists(task_id):
-        #     return self.await_add_task_middle_instance('Task ID doesn\'t exist. Please try again\n')
-        # self.change_state(ChangeState.update_add_task_middle)
         result = self.update_add_task_middle_instance(text)
-        if type(result) is not int:
+        if not isinstance(result, int):
             return result
         self.change_task(result)
         return self
 
-    # def update_remove_task(self, text):
-    #     try:
-    #         position = int(text)
-    #     except ValueError:
-    #         return self.await_remove_task_instance('Incorrect position. Please try again\n')
-    #
-    #     new_sort = self.remove_position_from_sort_instance(position)
-    #
-    #     return self.change_sorting(new_sort)
-
-    # def remove_position_from_sort(self, position):
-    #     sort = self.get_sort()
-    #     new_sort = {}
-    #
-    #     if position >= len(sort):
-    #         position = len(sort) - 1
-    #     if position < 0:
-    #         position = 0
-    #
-    #     for i in range(position):
-    #         new_sort[i] = sort[i]
-    #     for i in range(position + 1, len(sort)):
-    #         new_sort[i - 1] = sort[i]
-    #
-    #     return new_sort
-
-    # def await_set_position(self, *add_text):
-    #     self.change_state(ChangeState.await_set_position)
-    #     mes = ''
-    #     if len(add_text) > 0:
-    #         mes += add_text[0]
-    #     mes += f'To which position do you want to insert task {self.current_task}\n'
-    #     mes += self.get_sort()
-    #     return mes, None
-
-    # def update_set_position(self, text):
-    #     try:
-    #         l_position = int(text)
-    #     except ValueError:
-    #         return self.await_add_task_middle_instance('Incorrect position. Please try again\n')
-    #
-    #     sort = self.get_sort()
-    #     new_sort = {}
-    #
-    #     if l_position > len(sort):
-    #         l_position = len(sort)
-    #     if l_position < 0:
-    #         l_position = 0
-    #
-    #     for i in range(l_position):
-    #         new_sort[i] = sort[i]
-    #     new_sort[l_position] = self.current_task
-    #     for i in range(l_position, len(sort)):
-    #         new_sort[i + 1] = sort[i]
-    #
-    #     self.change_sorting(new_sort)
-    #     return self
-
-    # def update_sort(self, new_sort):
-    #     self.change_sorting(new_sort)
-    #     self.change_text(self.sort_message_instance(''))
-    #     return self
-
-    # def await_resort_existing(self, *add_text):
-    #     answer = self.await_remove_task_instance(add_text)
-    #     self.change_state(ChangeState.await_resort_existing)
-    #     return answer
-
     def update_resort_existing(self, text):
-        # try:
-        #     position = int(text)
-        # except ValueError:
-        #     return self.await_resort_existing_instance('Incorrect position. Please try again\n')
-        # sort = self.get_sort()
-        # task_id = sort[position]
-
         answer = self.update_resort_existing_instance(text)
         if not isinstance(answer, int):
             return answer
@@ -341,14 +155,14 @@ def manage_learning_track(user_id, user_state, *data):
         return track_state.await_learning_track()
 
     if track_state.state == ChangeState.await_learn_track:
-        track_state.update_learn_track(user_state)
+        track_state.update_instance(user_state)
         return track_state.await_current_sort()
 
     if track_state.state == ChangeState.await_current_sort:
         return track_state.update_current_sort(user_state)
 
     if track_state.state == ChangeState.await_change_current:
-        return track_state.update_change_current(user_state)
+        return track_state.update_change_current_instance(user_state)
 
     if track_state.state == ChangeState.await_add_task_middle:
         return track_state.update_task_middle(data[0][0])
@@ -381,6 +195,4 @@ def get_all_learning_tracks():
 
 def get_name_for_id(track_id):
     name = db.get_learning_track_name(track_id)
-    if len(name) > 0:
-        return name[0][0]
-    return None
+    return name[0][0] if len(name) > 0 else None

@@ -1,5 +1,5 @@
 import logging
-from instances import learning_track, question, user, task, section, test
+from instances import learning_track, question, user, task, section, test, test_rule
 import menu_navigation as nav
 
 
@@ -179,7 +179,7 @@ def manage_tests_menu():
                 ["Change existing prescripted test", f'{nav.change_existing_test_menu}'],
                 ["Manage test rules", f'{nav.change_test_rules_menu}'],
                 ["Back", f'{nav.admin_menu}']]
-    return f"Learning tracks menu / {nav.learning_tracks_menu}", keyboard
+    return f"Manage tests menu / {nav.manage_tests_menu}", keyboard
 
 
 def add_test(user_id, text):
@@ -198,7 +198,7 @@ def change_test(user_id, user_state, *text):
 
 
 def change_test_rules(user_id, user_state, *text):
-    reply = test.manage_test_rules(user_id, user_state, text)
+    reply = test_rule.manage_test_rule(user_id, user_state, text)
     mes = reply[0]
     keyboard = reply[1]
     return mes, keyboard

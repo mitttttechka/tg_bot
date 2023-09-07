@@ -1,10 +1,7 @@
-from instances import learning_track
+add_text = ''
+mes = add_text[0] if add_text else 'b'
+print(mes)
 
-a = learning_track.LearningTrack()
-print(type(a).__name__)
-
-# a = (())
-# if a:
 #     print('1')
 
 

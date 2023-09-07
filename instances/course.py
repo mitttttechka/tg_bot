@@ -1,8 +1,6 @@
 import logging
 
 from database import db
-from instances import user, question
-import menu_navigation as nav
 from datetime import datetime
 
 static_sections = []
@@ -57,7 +55,7 @@ class Course:
 def get_section(section_id):
     try:
         section_id = int(section_id)
-    except:
+    except ValueError:
         return None
     has_task = find_section_in_static(section_id)
     if has_task != -1:
@@ -112,10 +110,8 @@ def db_answer_to_sections_array(sections_array):
 
 
 def form_sections_message(sections, *add_text):
-    mes = ''
     logging.debug(f'add_text length: {len(add_text)}')
-    if len(add_text[0]) > 0:
-        mes += add_text[0][0]
+    mes = add_text[0][0] if len(add_text[0]) > 0 else ''
     for s_task in sections:
         mes += f'Section ID: {s_task.section_id}. {s_task.section_name}\n'
     return mes

@@ -41,7 +41,7 @@ def renew_database():
         f"DROP TABLE {Tables.test_id_name_table};" \
         f"CREATE TABLE {Tables.tests_table} (id integer, task_id integer, sort integer); " \
         f"INSERT INTO {Tables.tests_table} VALUES (0, 0, 0); " \
-        f"CREATE TABLE {Tables.test_rule_table} (track_id integer, section_id integer," \
+        f"CREATE TABLE {Tables.test_rule_table} (id integer, section_id integer," \
         f" number_tasks integer, sort integer); " \
         f"CREATE TABLE {Tables.sections_table} (id integer, section_name varchar(30)); " \
         f"INSERT INTO {Tables.sections_table} VALUES (0, 'default'); " \
@@ -199,6 +199,12 @@ def add_new_task(task):
 
 def get_learning_tracks_list():
     q = f'SELECT id, track_name FROM {Tables.track_id_name_table}'
+    answer = send_query(q)
+    return answer
+
+
+def get_tests_list():
+    q = f'SELECT id, test_name FROM {Tables.test_id_name_table}'
     answer = send_query(q)
     return answer
 

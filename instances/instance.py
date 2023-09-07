@@ -11,14 +11,15 @@ class Instance:
     def __init__(self):
         self.uid = None
         self.text = None
-        self.state = None
+        self.state = ChangeState.empty
         self.type = None
-        self.sorting = None
+        self.sorting = {}
+        self.current_task = None
 
     def get_info(self):
         ans = db.get_info_by_id(self.uid, self.type)
         if len(ans) > 0:
-            return ans[0]
+            return ans
         else:
             return []
 
@@ -31,8 +32,11 @@ class Instance:
     def change_text(self, text):
         self.text = text
 
+    def change_task(self, task_id):
+        self.current_task = task_id
+
     def get_sort(self):
-        if self.sorting is None:
+        if not self.sorting:
             info = self.get_info()
             sort = {}
             for row in info:
@@ -43,20 +47,14 @@ class Instance:
     def change_sorting(self, new_sort):
         self.sorting = new_sort
 
-
     def update_active_instances(self):
-        index = find_instance_in_static(self.uid, self.type)
-        if index == -1:
-            units.Units.unit_dict[self.type].statics.append(self)
-            units.Units.unit_dict[self.type].statics.sort(key=lambda x: x.uid, reverse=False)
-        else:
-            units.Units.unit_dict[self.type].statics[index] = self
+        units.Units.unit_dict[self.type].statics[self.uid] = self
         # TODO add async update to database
 
     def await_add_task_middle_instance(self, *add_text):
         self.change_state(ChangeState.await_add_task_middle)
         mes = ''
-        if len(add_text) > 0:
+        if len(add_text):
             mes += add_text[0]
         mes += 'Write Task ID to add:\n'
         mes = all_instances_message(task.Task, mes)  # task.all_tasks_message(mes)
@@ -65,7 +63,7 @@ class Instance:
     def sort_message_instance(self, *add_text):
         sort = self.get_sort()
         mes = ''
-        if len(add_text[0]):#len(add_text) > 0:
+        if add_text and len(add_text[0]):
             mes += add_text[0][0]
         if len(sort) == 0:
             mes = f'No tasks added yet.'
@@ -88,8 +86,8 @@ class Instance:
     def await_remove_task_instance(self, *add_text):
         self.change_state(ChangeState.await_remove_task)
         mes = ''
-        if len(add_text) > 0:
-            if type(add_text[0]) is str:
+        if len(add_text):
+            if isinstance(add_text[0], str):
                 mes += add_text[0]
         mes += self.sort_message_instance(f'Write task position to remove from the {self.type.__name__}:\n')
         return mes, None
@@ -132,7 +130,7 @@ class Instance:
         elif user_state[2] == '5':
             return self.await_resort_existing_instance()
 
-    def update_set_position(self, text, s_task):
+    def update_set_position(self, text):
         try:
             l_position = int(text)
         except ValueError:
@@ -148,7 +146,7 @@ class Instance:
 
         for i in range(l_position):
             new_sort[i] = sort[i]
-        new_sort[l_position] = s_task
+        new_sort[l_position] = self.current_task
         for i in range(l_position, len(sort)):
             new_sort[i + 1] = sort[i]
 
@@ -158,8 +156,9 @@ class Instance:
     def await_set_position(self, *add_text):
         self.change_state(ChangeState.await_set_position)
         mes = ''
-        if len(add_text) > 0:
+        if len(add_text):
             mes += add_text[0]
+        # TODO if no tasks in sort don't ask
         mes += f'To which position do you want to insert task {self.current_task}\n'
         mes += self.sort_message_instance()
         return mes, None
@@ -174,15 +173,31 @@ class Instance:
 
         return self.change_sorting(new_sort)
 
+    # TODO opportunity to input several tasks
+    def update_new_sort_instance(self, text):
+        answer = self.type.update_add_task_middle(self, text)
+        if not isinstance(answer, self.type):
+            return self, 'Incorrect Task ID. Please try again\n'
+        if self.get_sort() is None:
+            sort_id = 0
+        else:
+            sort_id = len(self.get_sort())
+        self.update_set_position(sort_id + 1)
+        return self, 'Task was added to the new sorting.\n'
+
+    def update_instance(self, user_state):
+        self.change_state(ChangeState.update_instance)
+        self.change_id(int(user_state[2:5]))
+        return self
+
 
 def get_instance(uid, unit_type):
     try:
         uid = int(uid)
     except ValueError:
         return None
-    has_instance = find_instance_in_static(uid, unit_type)
-    if has_instance != -1:
-        return units.Units.unit_dict[unit_type].statics[has_instance]
+    if uid in units.Units.unit_dict[unit_type].statics.keys():
+        return units.Units.unit_dict[unit_type].statics[uid]
     instances_array = db.get_info_by_id(uid, unit_type)
     if len(instances_array) > 0:
         db_instance = unit_type.db_answer_to_instances_array(instances_array)
@@ -192,7 +207,7 @@ def get_instance(uid, unit_type):
         return None
 
 
-def get_all_instances(unit_type):
+def get_all_instances_dict(unit_type):
     if units.Units.unit_dict[unit_type].last_updated is None \
             or (datetime.now() - units.Units.unit_dict[unit_type].last_updated).seconds > 120:
         instances_array = db.get_all_instances(unit_type)
@@ -201,6 +216,10 @@ def get_all_instances(unit_type):
         for single_instance in instances:
             single_instance.update_active_instances()
     return units.Units.unit_dict[unit_type].statics
+
+
+def get_all_instances(unit_type):
+    return get_all_instances_dict(unit_type).values()
 
 
 def form_instances_message(instances, *add_text):
@@ -213,18 +232,9 @@ def form_instances_message(instances, *add_text):
     return mes
 
 
-# def db_answer_to_instances_array(instances_array):
-#     instances = []
-#     for instance in instances_array:
-#         t = Instance()
-#         instances.append(t)
-#     return instances
-
-
-def find_instance_in_static(uid, unit_type):
-    for i in range(len(units.Units.unit_dict[unit_type].statics)):
-        if units.Units.unit_dict[unit_type].statics[i].uid == uid:
-            return i
+def find_instance_in_static(uid: int, unit_type):
+    if uid in units.Units.unit_dict[unit_type].statics.keys():
+        return uid
     return -1
 
 
@@ -268,7 +278,7 @@ def all_instances_message(unit_type, *add_text):
 def initiate_instance(user_id, user_state, unit_type):
     person = user.get_user(user_id)
     logging.debug(f"User {person.user_id} is here!. User state: {user_state}")
-    if person.working_on is None or type(person.working_on) is not unit_type:
+    if not isinstance(person.working_on, unit_type):
         new_instance = unit_type()
         person.working_on = new_instance
 

@@ -1,26 +1,7 @@
 from database import db
 from instances import user, question, section, instance
 import menu_navigation as nav
-
-
-class ChangeState:
-    new_task = 1
-    awaiting_section_id = 2
-    updating_section_id = 3
-    awaiting_text = 4
-    updating_text = 5
-    awaiting_picture_nec = 6
-    awaiting_picture_file = 7
-    updating_picture = 8
-    awaiting_question = 9
-    updating_question = 10
-    normal = 11
-    to_submit = 12
-    create_question = 13
-    awaiting_task_id = 14
-    awaiting_manage_task = 15
-    adding_question_in_manage = 16
-    submit_change_question = 17
+import State as ChangeState
 
 
 class Task(instance.Instance):
@@ -77,9 +58,7 @@ class Task(instance.Instance):
         return tasks
 
     def manage_task_new_task(self, *add_text):
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
+        mes = add_text[0] if len(add_text) > 0 else ''
         self.change_state(ChangeState.awaiting_task_id)
         mes += instance.all_instances_message(Task, 'Please write Task ID to manage:\n')
         keyboard = [['Back', f'{nav.manage_tasks_menu}']]
@@ -87,9 +66,7 @@ class Task(instance.Instance):
 
     def manage_task_await_task_id(self, *add_text):
         self.change_state(ChangeState.awaiting_manage_task)
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
+        mes = add_text[0] if len(add_text) > 0 else ''
         mes += instance.instance_message(self.uid, Task)
 
         keyboard = [['Change text', f'{nav.change_existing_task}1'],
@@ -117,7 +94,7 @@ class Task(instance.Instance):
     def updating_existing_task(self, person):
         db.update_existing_task(self)
         self.update_active_instances()
-        if person.working_on_add is not None and type(person.working_on_add) == question.Question:
+        if not isinstance(person.working_on_add, question.Question):
             person.working_on_add.change_task_id(self.uid)
             person.working_on_add.set_question_settings()
             person.working_on_add = None
@@ -127,7 +104,7 @@ class Task(instance.Instance):
         new_task_id = db.add_new_task(self)
         self.change_id(new_task_id)
         self.update_active_instances()
-        if person.working_on_add is not None and type(person.working_on_add) == question.Question:
+        if not isinstance(person.working_on_add, question.Question):
             person.working_on_add.change_task_id(new_task_id)
             person.working_on_add.set_question_settings()
             person.working_on_add = None
@@ -142,7 +119,7 @@ class Task(instance.Instance):
         for s_section in sections:
             button = s_section.text, f'{menu_section}{str(s_section.uid).zfill(3)}'
             keyboard.append(button)
-        keyboard.append(("Back", "52"))
+        keyboard.append(("Back", f'{nav.manage_tasks_menu}'))
 
         mes = f"Please select section for the task:"
         return mes, keyboard
@@ -171,10 +148,7 @@ class Task(instance.Instance):
 
     def updating_picture(self, link):
         self.change_state(ChangeState.updating_picture)
-        if link.lower() == 'no':
-            self.change_picture('NONE')
-        else:
-            self.change_picture(link)
+        self.change_picture('NONE') if link.lower() == 'no' else self.change_picture(link)
         return self
 
     def await_question(self, menu_section):
@@ -190,10 +164,7 @@ class Task(instance.Instance):
 
     def update_question(self, text):
         self.change_state(ChangeState.updating_question)
-        if text == '1':
-            self.change_question('TRUE')
-        else:
-            self.change_question('FALSE')
+        self.change_question('TRUE') if text == '1' else self.change_question('FALSE')
         return self
 
     def adding_complete(self):
@@ -233,7 +204,7 @@ def add_task(user_id, user_state, *data):
         task_state.update_question(user_state[2])
         if task_state.question == 'TRUE':
             task_state.change_state(ChangeState.create_question)
-            return question.add_question(user_id, '70')  # here or from menu?
+            return question.add_question(user_id, f'{nav.add_question_menu}')  # here or from menu?
         else:
             task_state.change_state(ChangeState.to_submit)
 
@@ -270,7 +241,7 @@ def manage_task(user_id, user_state, *data):
         task_state.update_question(user_state[2])
         if task_state.question == 'TRUE':
             task_state.change_state(ChangeState.adding_question_in_manage)
-            return question.add_question(user_id, '70')
+            return question.add_question(user_id, f'{nav.add_question_menu}')
         task_state.change_state(ChangeState.submit_change_question)
 
     if task_state.state == ChangeState.submit_change_question:
