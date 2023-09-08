@@ -63,19 +63,20 @@ class TestRule(instance.Instance):
 
     def sort_message(self, *add_text):
         sort = self.get_sort()
-        mes = add_text[0][0] if add_text and len(add_text[0]) else ''
+        mes = add_text[0][0] if add_text and add_text[0] else ''
         if not sort:
             mes = f'No sections added yet.'
         else:
             mes += 'Sort: Section; Number of tasks\n'
         for i in range(len(sort)):
-            mes += f'{i}: {sort[i][0]}, Number of tasks: {sort[i][1]}\n'
+            mes += f'{i}: id #{sort[i][0]}, {sort[i][1]} tasks\n'
         return mes
 
     def await_current_sort(self, *add_text):
         self.change_state(ChangeState.await_current_sort)
         mes = self.sort_message(add_text)
 
+        # TODO of 0 tasks don't allow delete or change
         keyboard = [('Change sections\' sort', f'{nav.change_test_rules_menu}1'),
                     ('Add section to test', f'{nav.change_test_rules_menu}2'),
                     ('Delete section from test', f'{nav.change_test_rules_menu}3'),
@@ -103,7 +104,7 @@ class TestRule(instance.Instance):
     def await_add_section(self, *add_text):
         self.change_state(ChangeState.await_add_section)
         mes = add_text[0] if add_text else ''
-        mes += 'Write Task ID to add:\n'
+        mes += 'Write Section ID to add:\n'
         mes = instance.all_instances_message(section.Section, mes)  # task.all_tasks_message(mes)
         return mes, None
 
@@ -112,21 +113,31 @@ class TestRule(instance.Instance):
         self.change_state(ChangeState.await_resort_existing)
         return answer
 
-    def change_q_tasks(self, *add_text):
+    def update_add_section(self, data):
+        try:
+            section_id = int(data)
+        except ValueError:
+            return self.await_add_section('Incorrect Section ID. Please try again\n')
+        if not instance.instance_exists(section_id, section.Section):
+            return self.await_add_section('Section ID doesn\'t exist. Please try again\n')
+        self.change_state(ChangeState.update_add_task_middle)
+        self.change_task(section_id)
+        return self.await_q_tasks()
+
+    def await_change_q_tasks(self, *add_text):
         self.change_state(ChangeState.await_change_q_tasks)
         mes = add_text[0] if add_text and isinstance(add_text[0], str) else ''
         mes += self.sort_message(f'Write section position to change number of tasks:\n')
         return mes, None
 
-    def update_task_middle(self, data):
+    def update_change_q_tasks(self, data):
         try:
-            section_id = int(data)
+            position = int(data)
+            if position < 0 or position > len(self.get_sort()) - 1:
+                raise ValueError
         except ValueError:
-            return self.await_add_task_middle_instance('Incorrect Section ID. Please try again\n')
-        if not instance.instance_exists(section_id, section.Section):
-            return self.await_add_task_middle_instance('Section ID doesn\'t exist. Please try again\n')
-        self.change_state(ChangeState.update_add_task_middle)
-        self.change_task(section_id)
+            return self.await_change_q_tasks('Incorrect position. Please try again\n')
+        self.change_task(position)
         return self.await_q_tasks()
 
     def await_q_tasks(self, *add_text):
@@ -134,6 +145,19 @@ class TestRule(instance.Instance):
         mes = add_text[0] if add_text else ''
         mes += f'How many tasks from the section should be in test?\n'
         return mes, None
+
+    def update_q_tasks_exist(self, data):
+        try:
+            q_tasks = int(data)
+        except ValueError:
+            q_tasks = 1
+        self.change_state(ChangeState.update_q_tasks)
+        sorting = self.get_sort()
+        sorting[self.current_task] = sorting[self.current_task][0], q_tasks
+        self.change_sorting(sorting)
+        db.update_sorting(self.uid, self.sorting, self.type)
+        text = 'Number of tasks in section was successfully changed.\n'
+        return self.await_current_sort(text)
 
     def update_q_tasks(self, data):
         try:
@@ -155,7 +179,38 @@ class TestRule(instance.Instance):
     def set_position_menu(self, data):
         self.update_set_position(data)
         db.update_sorting(self.uid, self.get_sort(), self.type)
-        text = 'The task was successfully added. New sort:\n'
+        text = 'The Section was successfully added. New sort:\n'
+        return self.await_current_sort(text)
+
+    def update_remove_section(self, data):
+        self.update_remove_task(data)
+        db.update_sorting(self.uid, self.sorting, self.type)
+        text = 'The Section was successfully removed. New sort:\n'
+        return self.await_current_sort(text)
+
+    def await_resort_existing(self, *add_text):
+        answer = self.await_remove_section(add_text)
+        self.change_state(ChangeState.await_resort_existing)
+        return answer
+
+    def resort_existing_menu(self, data):
+        self.update_resort_existing(data)
+        self.update_remove_task(data)
+        key = self.await_set_position()
+        self.change_state(ChangeState.await_resort)
+        return key
+
+    def update_resort_existing(self, text):
+        answer = self.update_resort_existing_instance(text)
+        if not isinstance(answer, int):
+            return answer
+        self.change_task(answer)
+        return self
+
+    def resort_menu(self, data):
+        self.update_set_position(data)
+        db.update_sorting(self.uid, self.get_sort(), self.type)
+        text = 'The task was successfully moved. New sort:\n'
         return self.await_change_current(text)
 
 
@@ -178,14 +233,25 @@ def manage_test_rule(user_id, user_state, *data):
     if rule_state.state == ChangeState.await_remove_section:
         return rule_state.update_remove_section(data[0][0])
 
-    if rule_state.state == ChangeState.await_resort_existing:
-        return rule_state.resort_existing_await_position(data[0][0])
+    # if rule_state.state == ChangeState.await_resort_existing:
+    #     return rule_state.resort_existing_await_position(data[0][0])
 
     if rule_state.state == ChangeState.await_change_q_tasks:
-        return rule_state.update_change_q_tasks(data[0][0])
+        mes_key = rule_state.update_change_q_tasks(data[0][0])
+        rule_state.change_state(ChangeState.await_q_tasks_exist)
+        return mes_key
+
+    if rule_state.state == ChangeState.await_q_tasks_exist:
+        return rule_state.update_q_tasks_exist(data[0][0])
 
     if rule_state.state == ChangeState.await_q_tasks:
         return rule_state.update_q_tasks(data[0][0])
 
     if rule_state.state == ChangeState.await_set_position:
         return rule_state.set_position_menu(data[0][0])
+
+    if rule_state.state == ChangeState.await_resort_existing:
+        return rule_state.resort_existing_menu(data[0][0])
+
+    if rule_state.state == ChangeState.await_resort:
+        return rule_state.resort_menu(data[0][0])

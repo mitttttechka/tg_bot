@@ -221,7 +221,8 @@ def update_sorting(uid, sort, unit_type):
     if len(sort) > 0:
         q = f'INSERT INTO {units.Units.unit_dict[unit_type].db_table} VALUES '
         for i in range(len(sort)):
-            q += f'({uid}, {i}, {sort[i]}), '
+            sort_str = sort[i] if isinstance(sort[i], int) else sort[i]
+            q += f'({uid}, {i}, {str(sort_str)[1:-1]}), '
         q = q[0:len(q) - 2]
         send_query(q)
 

@@ -1,12 +1,5 @@
-add_text = ''
-mes = add_text[0] if add_text else 'b'
-print(mes)
-
-#     print('1')
-
-
-
-
+a = ((2,),)
+print(*a)
 
 
 '''
@@ -15,7 +8,7 @@ class A:
         self.a = 3
 
     def increase(self):
-        self.a += 1
+        self.a += 1 
         return None
 
 
