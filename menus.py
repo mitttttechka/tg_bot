@@ -75,9 +75,6 @@ def menu_button_press(data, user_id):
 def message(person: user.User, text):
     if "admin" in str(text):
         person.set_current_position(nav.admin_menu)
-    # if person.current_position == nav.add_task_menu:
-    #    response = add_task_menu(user_id, None, text)
-    #    return response
     return menu_navigation(person.current_position, person.user_id, None, text)
 
 

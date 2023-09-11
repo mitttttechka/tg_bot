@@ -63,7 +63,14 @@ class TestRule(instance.Instance):
 
     def sort_message(self, *add_text):
         sort = self.get_sort()
-        mes = add_text[0][0] if add_text and add_text[0] else ''
+        if add_text:
+            if isinstance(add_text[0], str):
+                mes = add_text[0]
+            elif add_text[0]:
+                mes = add_text[0][0]
+            else:
+                mes = ''
+        #mes = add_text[0][0] if add_text and add_text[0] else ''
         if not sort:
             mes = f'No sections added yet.'
         else:
@@ -98,7 +105,8 @@ class TestRule(instance.Instance):
     def await_remove_section(self, *add_text):
         self.change_state(ChangeState.await_remove_section)
         mes = add_text[0] if add_text and isinstance(add_text[0], str) else ''
-        mes += self.sort_message(f'Write section position to remove from the test rule:\n')
+        # noinspection PyRedundantParentheses
+        mes += self.sort_message((f'Write section position to remove from the test rule:\n'), )
         return mes, None
 
     def await_add_section(self, *add_text):
@@ -202,16 +210,15 @@ class TestRule(instance.Instance):
 
     def update_resort_existing(self, text):
         answer = self.update_resort_existing_instance(text)
-        if not isinstance(answer, int):
+        if not isinstance(answer, tuple):
             return answer
         self.change_task(answer)
-        return self
 
     def resort_menu(self, data):
         self.update_set_position(data)
         db.update_sorting(self.uid, self.get_sort(), self.type)
         text = 'The task was successfully moved. New sort:\n'
-        return self.await_change_current(text)
+        return self.await_current_sort(text)
 
 
 def manage_test_rule(user_id, user_state, *data):
