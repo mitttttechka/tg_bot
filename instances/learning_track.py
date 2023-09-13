@@ -88,7 +88,7 @@ class LearningTrack(instance.Instance):
         return mes, keyboard
 
     def await_learning_track(self):
-        self.change_state(ChangeState.await_learn_track)
+        self.change_state(ChangeState.await_instance)
         # TODO change to instance
         tracks_list = get_all_learning_tracks()
         keyboard = []
@@ -143,7 +143,7 @@ def add_learning_track(user_id, text):
     new_task = LearningTrack()
     person.working_on = new_task
     track_state = person.working_on
-    track_state.change_state(ChangeState.await_learn_track)
+    track_state.change_state(ChangeState.await_instance)
     return new_track_id
 
 
@@ -154,7 +154,7 @@ def manage_learning_track(user_id, user_state, *data):
     if track_state.state == ChangeState.empty:
         return track_state.await_learning_track()
 
-    if track_state.state == ChangeState.await_learn_track:
+    if track_state.state == ChangeState.await_instance:
         track_state.update_instance(user_state)
         return track_state.await_current_sort()
 

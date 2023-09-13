@@ -3,15 +3,7 @@ import logging
 from database import db
 from instances import instance
 import menu_navigation as nav
-
-
-class ChangeState:
-    normal = 1
-    new_section = 2
-    awaiting_section_id = 3
-    awaiting_manage_section = 4
-    awaiting_text = 5
-    updating_text = 6
+import State as ChangeState
 
 
 class Section(instance.Instance):
@@ -29,7 +21,7 @@ class Section(instance.Instance):
             self.text = section_id[1]
             self.state = ChangeState.normal
         else:
-            self.state = ChangeState.new_section
+            self.state = ChangeState.new_instance
 
     def update(self, section_id):
         self.uid = section_id
@@ -47,9 +39,7 @@ class Section(instance.Instance):
         return sections
 
     def manage_section_new_section(self, *add_text):
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
+        mes = add_text[0] if add_text else ''
         self.change_state(ChangeState.awaiting_section_id)
         mes += instance.all_instances_message(Section, 'Please write Section ID to manage:\n')
         keyboard = [['Back', f'{nav.manage_sections_menu}']]
@@ -57,9 +47,7 @@ class Section(instance.Instance):
 
     def manage_section_await_section_id(self, *add_text):
         self.change_state(ChangeState.awaiting_manage_section)
-        mes = ''
-        if len(add_text) > 0:
-            mes += add_text[0]
+        mes = add_text[0] if len(add_text) > 0 else ''
         mes += instance.instance_message(self.uid, Section)
 
         keyboard = [['Change name', f'{nav.find_section}1'],
@@ -98,7 +86,7 @@ class Section(instance.Instance):
 
 
 def add_new_section(text):
-    new_id = db.add_new_section(text)
+    new_id = db.add_new_instance(text, Section)
     new_section = Section(new_id, text)
     new_section.update_active_instances()
 
@@ -106,7 +94,7 @@ def add_new_section(text):
 def manage_section(user_id, user_state, *data):
     section_state, person = instance.initiate_instance(user_id, user_state, Section)
 
-    if section_state.state == ChangeState.new_section:
+    if section_state.state == ChangeState.new_instance:
         return section_state.manage_section_new_section()
 
     if section_state.state == ChangeState.awaiting_section_id:

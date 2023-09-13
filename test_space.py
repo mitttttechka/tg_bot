@@ -1,5 +1,11 @@
-a = ((2,),)
-print(*a)
+import random
+symbols = [*[a for a in range(48, 58)], *[a for a in range(97, 123)], *[a for a in range(65, 91)]]
+code = ''
+for i in range(8):
+    code += chr(symbols[random.randint(0, len(symbols))])
+print(code)
+# a = ((2,),)
+# print(*a)
 
 
 '''

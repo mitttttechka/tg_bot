@@ -1,5 +1,5 @@
 import logging
-from instances import learning_track, question, user, task, section, test, test_rule
+from instances import learning_track, question, user, task, section, test, test_rule, course
 import menu_navigation as nav
 
 
@@ -44,6 +44,10 @@ def menu_navigation(data, user_id, original_data, text):
         return add_task(user_id, original_data, text)
     elif data == nav.change_existing_task:
         return manage_task(user_id, original_data, text)
+    elif data == nav.add_class:
+        return add_class(text, user_id)
+    elif data == nav.find_class:
+        return manage_class(user_id, original_data, text)
     elif data == nav.add_section_request:
         return add_section_request(text, person.user_id)
     elif data == nav.find_section:
@@ -231,6 +235,22 @@ def add_question(user_id, user_state, *text):
         complete = menu_button_press(nav.manage_tasks_menu, user_id)
         mes += f'\n{complete[0]}'
         keyboard = complete[1]
+    return mes, keyboard
+
+
+def add_class(text, user_id):
+    if text is not None:
+        course.add_new_class(text, user_id)
+        response = menu_button_press(nav.find_class, user_id)
+        mes = f'Class \'{text}\' has been added successfully!\n{response[0]}'
+        return mes, response[1]
+    return f"Please write new class name:", None
+
+
+def manage_class(user_id, user_state, *text):
+    reply = course.manage_class(user_id, user_state, text)
+    mes = reply[0]
+    keyboard = reply[1]
     return mes, keyboard
 
 

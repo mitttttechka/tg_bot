@@ -65,7 +65,9 @@ def renew_database():
         f"CREATE TABLE {Tables.user_table} (id bigint, user_name varchar(30), type integer DEFAULT 1, " \
         f"class_id integer DEFAULT 0, subscribed boolean DEFAULT false, progress_point integer DEFAULT 0, " \
         f"current_position integer DEFAULT 0); " \
-        f"CREATE TABLE {Tables.class_table} (id integer, class_name text);"
+        f"CREATE TABLE {Tables.class_table} (id integer, class_name text, teacher_id integer, " \
+        f"invite_code varchar(30), max_students integer); " \
+        f"INSERT INTO {Tables.class_table} VALUES (0, \'default class\', 0, \'INV000\', 5); "
     send_query(q)
 
 
@@ -116,6 +118,7 @@ def get_info_by_id(uid, unit_type):
     answer = send_query(q)
     return answer
 
+
 def create_new_user(user_id):
     insert(Tables.user_table, [(user_id, '', 1, 0, 'False', 0, 0)])
 
@@ -154,15 +157,7 @@ def update_existing_section(section):
     send_query(q)
 
 
-def add_new_section(text):
-    q = f'SELECT MAX(id) FROM {Tables.sections_table}'
-    answer = send_query(q)
-    new_section_id = int(answer[0][0]) + 1
-    q = f'INSERT INTO {Tables.sections_table} VALUES (' \
-        f'{str(new_section_id)}, ' \
-        f'\'{text}\')'
-    send_query(q)
-    return new_section_id
+
 
 
 def get_all_sections():
@@ -237,6 +232,39 @@ def get_section_name(section):
     q = f'SELECT section_name FROM {Tables.sections_table} WHERE id = {str(section)}'
     answer = send_query(q)
     return answer
+
+
+def add_new_instance(text, unit_type):
+    q = f'SELECT MAX(id) FROM {units.Units.unit_dict[unit_type].db_table}'
+    answer = send_query(q)
+    new_uid = int(answer[0][0]) + 1
+    q = f'INSERT INTO {units.Units.unit_dict[unit_type].db_table} VALUES (' \
+        f'{str(new_uid)}, ' \
+        f'\'{text}\')'
+    send_query(q)
+    return new_uid
+
+
+# def add_new_section(text):
+#     q = f'SELECT MAX(id) FROM {Tables.sections_table}'
+#     answer = send_query(q)
+#     new_section_id = int(answer[0][0]) + 1
+#     q = f'INSERT INTO {Tables.sections_table} VALUES (' \
+#         f'{str(new_section_id)}, ' \
+#         f'\'{text}\')'
+#     send_query(q)
+#     return new_section_id
+
+
+# def add_new_class(text):
+#     q = f'SELECT MAX(id) FROM {Tables.class_table}'
+#     answer = send_query(q)
+#     new_section_id = int(answer[0][0]) + 1
+#     q = f'INSERT INTO {Tables.class_table} VALUES (' \
+#         f'{str(new_section_id)}, ' \
+#         f'\'{text}\')'
+#     send_query(q)
+#     return new_section_id
 
 
 def add_new_learning_track(track_name):

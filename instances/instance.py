@@ -4,6 +4,7 @@ from database import db
 from instances import user, units, task
 from datetime import datetime
 import State as ChangeState
+import random
 
 
 class Instance:
@@ -155,9 +156,7 @@ class Instance:
 
     def await_set_position(self, *add_text):
         self.change_state(ChangeState.await_set_position)
-        mes = ''
-        if len(add_text):
-            mes += add_text[0]
+        mes = add_text[0] if len(add_text) else ''
         # TODO if no tasks in sort don't ask
         mes += f'To which position do you want to insert task {self.current_task}\n'
         mes += self.sort_message_instance()
@@ -223,10 +222,8 @@ def get_all_instances(unit_type):
 
 
 def form_instances_message(instances, *add_text):
-    mes = ''
     logging.debug(f'add_text length: {len(add_text)}')
-    if len(add_text[0]) > 0:
-        mes += add_text[0][0]
+    mes = add_text[0][0] if len(add_text[0]) > 0 else ''
     for s_instance in instances:
         mes += f'ID: {s_instance.uid}. {s_instance.text}\n'
     return mes
@@ -285,3 +282,11 @@ def initiate_instance(user_id, user_state, unit_type):
     instance_state = person.working_on
     logging.debug(f"Task_state: {instance_state.uid}")
     return instance_state, person
+
+
+def generate_code(length = 8):
+    symbols = [*[a for a in range(48, 58)], *[a for a in range(97, 123)], *[a for a in range(65, 91)]]
+    code = ''
+    for i in range(8):
+        code += chr(symbols[random.randint(0, len(symbols))])
+    return code

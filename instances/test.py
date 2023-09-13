@@ -40,7 +40,7 @@ class Test(instance.Instance):
 
     # TODO await_test to instance
     def await_test(self):
-        self.change_state(ChangeState.await_test)
+        self.change_state(ChangeState.await_instance)
         tests_list = get_all_tests()
         keyboard = []
         for test in tests_list:
@@ -169,7 +169,7 @@ def add_test(user_id, text):
     new_test = Test()
     person.working_on = new_test
     test_state = person.working_on
-    test_state.change_state(ChangeState.await_test)
+    test_state.change_state(ChangeState.await_instance)
     test_state.change_id(new_test_id)
     test_state.change_text(text)
     test_state.update_active_instances()
@@ -182,7 +182,7 @@ def manage_test(user_id, user_state, *data):
     if test_state.state == ChangeState.empty:
         return test_state.await_test()
 
-    if test_state.state == ChangeState.await_test:
+    if test_state.state == ChangeState.await_instance:
         test_state.update_instance(user_state)
         return test_state.await_change_current()
 

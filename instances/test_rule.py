@@ -4,6 +4,9 @@ import menu_navigation as nav
 import State as ChangeState
 
 
+# TODO teachers and students see only default information and self class'
+# TODO how to assign test to classes? new table w/ dt, test_id, deadline
+# TODO restrict teachers to create many classes
 class TestRule(instance.Instance):
 
     def __init__(self, *track_id):
@@ -40,7 +43,7 @@ class TestRule(instance.Instance):
         return tests_arr
 
     def await_learning_track(self):
-        self.change_state(ChangeState.await_learn_track)
+        self.change_state(ChangeState.await_instance)
         # TODO change to instance
         tracks_list = learning_track.get_all_learning_tracks()
         keyboard = []
@@ -63,6 +66,7 @@ class TestRule(instance.Instance):
 
     def sort_message(self, *add_text):
         sort = self.get_sort()
+        mes = ''
         if add_text:
             if isinstance(add_text[0], str):
                 mes = add_text[0]
@@ -70,7 +74,6 @@ class TestRule(instance.Instance):
                 mes = add_text[0][0]
             else:
                 mes = ''
-        #mes = add_text[0][0] if add_text and add_text[0] else ''
         if not sort:
             mes = f'No sections added yet.'
         else:
@@ -227,7 +230,7 @@ def manage_test_rule(user_id, user_state, *data):
     if rule_state.state == ChangeState.empty:
         return rule_state.await_learning_track()
 
-    if rule_state.state == ChangeState.await_learn_track:
+    if rule_state.state == ChangeState.await_instance:
         rule_state.update_instance(user_state)
         return rule_state.await_current_sort()
 

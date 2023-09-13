@@ -1,117 +1,112 @@
-import logging
-
 from database import db
-from datetime import datetime
-
-static_sections = []
-
-
-class LastUpdated:
-    dt_all_sections_updated = None
+from instances import user, instance, task
+import menu_navigation as nav
+import State as ChangeState
+import random
 
 
-class ChangeState:
-    normal = 1
-    new_section = 2
+class Course(instance.Instance):
 
-
-class Course:
-
-    def __init__(self, *section_id):
-        if len(section_id) == 1:
-            self.section_id = section_id[0]
-            info = self.get_section_info()
-            self.section_name = info[1]
+    def __init__(self, *class_id):
+        super().__init__()
+        self.type = Course
+        if len(class_id) == 1:
+            self.uid = class_id[0]
+            info = self.get_info()
+            self.text = info[1]
+            self.teacher_id = int(info[2])
+            self.invite_code = info[3]
+            self.max_students = int(info[4])
             self.state = ChangeState.normal
-        elif len(section_id) == 2:
-            self.section_id = section_id[0]
-            self.section_name = section_id[1]
+        elif len(class_id) == 5:
+            self.uid = class_id[0]
+            self.text = class_id[1]
+            self.teacher_id = int(class_id[2])
+            self.invite_code = class_id[3]
+            self.max_students = int(class_id[4])
             self.state = ChangeState.normal
         else:
-            self.section_id = None
-            self.section_name = None
-            self.state = ChangeState.new_section
+            self.teacher_id = None
+            self.invite_code = None
+            self.max_students = 1
 
-    def get_section_info(self):
-        return db.get_section_by_id(self.section_id)[0]
-
-    def update(self, section_id):
-        self.section_id = section_id
-        info = self.get_section_info()
-        self.section_name = info[1]
+    def update(self, class_id):
+        self.uid = class_id
+        info = self.get_info()
+        self.teacher_id = int(info[2])
+        self.invite_code = info[3]
+        self.max_students = int(info[4])
         self.state = ChangeState.normal
-        update_active_sections(self)
+        self.update_active_instances()
 
-    def change_id(self, section_id):
-        self.section_id = section_id
+    def change_teacher_id(self, teacher_id):
+        self.teacher_id = teacher_id
 
-    def change_state(self, state):
-        self.state = state
+    def change_invite_code(self, code):
+        self.invite_code = code
 
-    def change_name(self, name):
-        self.section_name = name
+    def create_code(self):
+        code = instance.generate_code()
+        self.change_invite_code(code)
 
+    @staticmethod
+    def db_answer_to_instances_array(courses_array):
+        courses = []
+        for course in courses_array:
+            t = Course(course[0], course[1], course[2], course[3], course[4])
+            courses.append(t)
+        return courses
 
-def get_section(section_id):
-    try:
-        section_id = int(section_id)
-    except ValueError:
-        return None
-    has_task = find_section_in_static(section_id)
-    if has_task != -1:
-        return static_sections[has_task]
-    sections_array = db.get_task_by_id(section_id)
-    if len(sections_array) > 0:
-        db_section = db_answer_to_sections_array(sections_array)
-        update_active_sections(db_section[0])
-        return db_section[0]
-    else:
-        return None
+    def manage_class_new_class(self, *add_text):
+        mes = add_text[0] if add_text else ''
+        self.change_state(ChangeState.awaiting_instance_id)
+        mes += instance.all_instances_message(Course, 'Please write Class ID to manage:\n')
+        keyboard = [['Back', f'{nav.manage_classes_menu}']]
+        return mes, keyboard
 
+    def get_existing_instance(self, text):
+        if not instance.instance_exists(text, Course):
+            return self.manage_class_new_class('Class doesn\'t exist. Please try again.\n')
+        self.update(int(text))
+        return self
 
-def update_active_sections(section):
-    index = find_section_in_static(section.section_id)
-    if index == -1:
-        static_sections.append(section)
-        static_sections.sort(key= lambda x: x.section_id, reverse=False)
-    else:
-        static_sections[index] = section
-    # TODO add async update to database
+    def instance_message(self, *add_text):
+        mes = add_text[0] if len(add_text) > 0 else ''
+        mes += f'ID: {self.uid}\nName: {self.text}\nMaximum number of students: {self.max_students}\n'
+        return mes
 
+    def manage_class_await_class_id(self, *add_text):
+        self.change_state(ChangeState.awaiting_manage_instance)
+        mes = add_text[0] if len(add_text) > 0 else ''
+        mes += self.instance_message()
 
-def find_section_in_static(section_id):
-    for i in range(len(static_sections)):
-        if static_sections[i].section_id == section_id:
-            return i
-    return -1
+        keyboard = [['Change name', f'{nav.find_class}1'],
+                    ['Change maximum number of students', f'{nav.find_class}2'],
+                    ['Delete class', f'{nav.find_class}3'],
+                    ['Back', f'{nav.manage_classes_menu}']]
 
-
-def all_sections_message(*add_text):
-    sections = get_all_sections()
-    return form_sections_message(sections, add_text)
-
-
-def get_all_sections():
-    if LastUpdated.dt_all_sections_updated is None or (datetime.now() - LastUpdated.dt_all_sections_updated).seconds > 120:
-        sections_array = db.get_all_sections()
-        LastUpdated.dt_all_tasks_updated = datetime.now()
-        sections = db_answer_to_sections_array(sections_array)
-        for single_section in sections:
-            update_active_sections(single_section)
-    return static_sections
+        return mes, keyboard
 
 
-def db_answer_to_sections_array(sections_array):
-    sections = []
-    for section in sections_array:
-        t = Course(section[0], section[1])
-        sections.append(t)
-    return sections
+def add_new_class(text, teacher_id):
+    new_id = db.add_new_instance(text, Course)
+    new_course = Course(new_id, text, teacher_id, instance.generate_code(), 5)
+    new_course.update_active_instances()
 
 
-def form_sections_message(sections, *add_text):
-    logging.debug(f'add_text length: {len(add_text)}')
-    mes = add_text[0][0] if len(add_text[0]) > 0 else ''
-    for s_task in sections:
-        mes += f'Section ID: {s_task.section_id}. {s_task.section_name}\n'
-    return mes
+def manage_class(user_id, user_state, *data):
+    class_state, person = instance.initiate_instance(user_id, user_state, Course)
+
+    if class_state.state == ChangeState.empty:
+        return class_state.manage_class_new_class()
+
+    if class_state.state == ChangeState.awaiting_instance_id:
+        class_state.get_existing_instance(data[0][0])
+        return class_state.manage_class_await_class_id()
+
+    return None
+
+
+def get_all_tests():
+    tests_list = db.get_tests_list()
+    return tests_list

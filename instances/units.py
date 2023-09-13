@@ -19,6 +19,6 @@ class Units:
         Units.unit_dict[instances.section.Section] = DictInstances({}, db.Tables.sections_table, '')
         Units.unit_dict[instances.user.User] = DictInstances({}, db.Tables.user_table, '')
         Units.unit_dict[instances.test.Test] = DictInstances({}, db.Tables.tests_table, '')
-        # Units.unit_dict[instances.course.Course] = DictInstances([], db.Tables.class_table, '')
+        Units.unit_dict[instances.course.Course] = DictInstances({}, db.Tables.class_table, '')
         Units.unit_dict[instances.question.Question] = DictInstances({}, db.Tables.task_answers_table, '')
         Units.unit_dict[instances.test_rule.TestRule] = DictInstances({}, db.Tables.test_rule_table, '')
