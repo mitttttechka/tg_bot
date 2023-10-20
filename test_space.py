@@ -1,9 +1,17 @@
-import random
-symbols = [*[a for a in range(48, 58)], *[a for a in range(97, 123)], *[a for a in range(65, 91)]]
-code = ''
-for i in range(8):
-    code += chr(symbols[random.randint(0, len(symbols))])
-print(code)
+y = "a;b;c;"
+z = y.split(';')
+print(len(z))
+# mun_list = [1, 2, 3, 4, 5]
+# mun_list.remove(2)
+# print(mun_list)
+# a = reversed(list(range(1,11)))
+# print(a)
+# import random
+# symbols = [*[a for a in range(48, 58)], *[a for a in range(97, 123)], *[a for a in range(65, 91)]]
+# code = ''
+# for i in range(8):
+#     code += chr(symbols[random.randint(0, len(symbols))])
+# print(code)
 # a = ((2,),)
 # print(*a)
 

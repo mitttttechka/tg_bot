@@ -76,10 +76,9 @@ class Test(instance.Instance):
 
     def update_add_task_middle(self, text):
         result = self.update_add_task_middle_instance(text)
+        self.change_task(result)
         if isinstance(result, int):
             return result
-        self.change_task(result)
-        return self
 
     def update_resort_existing(self, text):
         answer = self.update_resort_existing_instance(text)
