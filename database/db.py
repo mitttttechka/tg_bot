@@ -1,5 +1,7 @@
 from database import db_connection
 import logging
+import json
+from collections import namedtuple
 from instances import units
 
 
@@ -7,6 +9,23 @@ def send_query(query):
     logging.warning(query)
     answer = db_connection.send_query(query)
     return answer
+
+
+def get_redis(key):
+    res = db_connection.Connection.rdb.get(key)
+    if res:
+        x = json.loads(res, object_hook=lambda d: namedtuple('X', d.keys()) * (d.values()))
+        return x
+    return res
+
+
+def set_redis(key, value):
+    json_str = json.dumps(value.__dict__)
+    db_connection.Connection.rdb.set(key, json_str)
+
+
+def del_redis(key):
+    db_connection.Connection.rdb.delete(key)
 
 
 class Tables:

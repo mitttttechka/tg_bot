@@ -1,8 +1,11 @@
 import psycopg2
+import logging
+import redis
 
 
 class Connection:
     conn = None
+    rdb = None
 
 
 def connect():
@@ -11,28 +14,36 @@ def connect():
     try:
 
         # connect to the PostgreSQL server
-        print('Connecting to the PostgreSQL database...')
+        logging.info('Connecting to the PostgreSQL database...')
         Connection.conn = psycopg2.connect(
             host="localhost",
             database="tg_bot_develop",
             user="mitttttechka",
             password="",
-            port="5434")
+            port="5432")
+        logging.info('PostgreSQL database successfully connected.')
+
+        logging.info('Connecting to the Redis database...')
+        Connection.rdb = redis.Redis(
+            host='localhost',
+            port=6379,
+            decode_responses=True)
+        logging.info('Redis database successfully connected.')
 
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logging.error(error)
 
 
 def disconnect():
     Connection.conn.commit()
     if Connection.conn is not None:
         Connection.conn.close()
-        print('Database connection closed.')
+        logging.info('Database connection closed.')
 
 
 def send_query(query):
     if Connection.conn is None:
-        print('No connection to the database')
+        logging.error('No connection to the database')
         return 0
     cur = Connection.conn.cursor()
     cur.execute(query)

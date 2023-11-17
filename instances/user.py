@@ -2,7 +2,7 @@ import logging
 
 from database import db
 
-active_users = []
+#active_users = []
 
 
 class User:
@@ -52,29 +52,42 @@ class User:
 
 
 def get_user(user_id):
-    has_active = find_user_in_active(user_id)
+    user = find_user_in_active(user_id)
+    if user:
+        return user
+    new_user = User(user_id)
+    update_active_users(new_user)
+    return new_user
+    '''has_active = find_user_in_active(user_id)
     if has_active != -1:
         return active_users[has_active]
     new_user = User(user_id)
     active_users.append(new_user)
-    return new_user
+    return new_user'''
 
 
 def find_user_in_active(user_id):
+    res = db.get_redis(f'userID:{user_id}')
+    return res
+    '''
     for i in range(len(active_users)):
         if active_users[i].user_id == user_id:
             return i
     return -1
+    '''
 
 
 def update_active_users(user):
-    index = find_user_in_active(user.user_id)
-    active_users[index] = user
+    #index = find_user_in_active(user.user_id)
+
+    #active_users[index] = user
+    db.set_redis(f'userID:{user.user_id}', user)
     # TODO add async update to database
 
 
 # TODO async delete from db
 def delete_user(user_id):
-    index = find_user_in_active(user_id)
-    if index != -1:
-        active_users.pop(index)
+    db.del_redis(f'userID{user_id}')
+    #index = find_user_in_active(user_id)
+    #if index != -1:
+    #    active_users.pop(index)
