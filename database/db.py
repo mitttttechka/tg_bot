@@ -11,12 +11,12 @@ def send_query(query):
     return answer
 
 
-def get_redis(key):
+def get_redis(key, class_to_des):
     res = db_connection.Connection.rdb.get(key)
-    if res:
-        x = json.loads(res, object_hook=lambda d: namedtuple('X', d.keys()) * (d.values()))
-        return x
-    return res
+    if res is not None:
+        res = json.loads(res, object_hook=class_to_des.from_json)
+        return res
+    return None
 
 
 def set_redis(key, value):
@@ -88,6 +88,8 @@ def renew_database():
         f"invite_code varchar(30), max_students integer); " \
         f"INSERT INTO {Tables.class_table} VALUES (0, \'default class\', 0, \'INV000\', 5); "
     send_query(q)
+
+    db_connection.Connection.rdb.flushdb()
 
 
 # values - array of tuples

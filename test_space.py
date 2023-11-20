@@ -1,6 +1,11 @@
-y = "a;b;c;"
-z = y.split(';')
-print(len(z))
+from database import db_connection
+db_connection.connect()
+res = db_connection.Connection.rdb.get('userID:78137619')
+print(res)
+
+#y = "a;b;c;"
+#z = y.split(';')
+#print(len(z))
 # mun_list = [1, 2, 3, 4, 5]
 # mun_list.remove(2)
 # print(mun_list)

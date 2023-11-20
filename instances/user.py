@@ -1,23 +1,48 @@
 import logging
+import json
 
 from database import db
-
-#active_users = []
 
 
 class User:
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, user_name=None, mtype=None, class_id=None, subscribed=None,
+                 progress_point=None, current_position=None, working_on=None, working_on_add=None):
         self.user_id = user_id
-        info = self.get_user_info()
-        self.user_name: str = info[1]
-        self.type: int = int(info[2])
-        self.class_id: int = int(info[3])
-        self.subscribed: bool = info[4]
-        self.progress_point: int = int(info[5])
-        self.current_position: int = int(info[6])
-        self.working_on = None
-        self.working_on_add = None
+        if user_name is None:
+            info = self.get_user_info()
+            self.user_name: str = info[1] if info[1] else None
+            self.type: int = int(info[2])
+            self.class_id: int = int(info[3])
+            self.subscribed: bool = info[4]
+            self.progress_point: int = int(info[5])
+            self.current_position: int = int(info[6])
+            self.working_on = None
+            self.working_on_add = None
+        else:
+            self.user_name = user_name
+            self.type: int = mtype
+            self.class_id: int = class_id
+            self.subscribed: bool = subscribed
+            self.progress_point: int = progress_point
+            self.current_position: int = current_position
+            self.working_on = working_on
+            self.working_on_add = working_on_add
+
+    @staticmethod
+    def from_json(json_dict):
+        new_user = User(
+            json_dict['user_id'],
+            json_dict['user_name'],
+            json_dict['type'],
+            json_dict['class_id'],
+            json_dict['subscribed'],
+            json_dict['progress_point'],
+            json_dict['current_position'],
+            json_dict['working_on'],
+            json_dict['working_on_add']
+        )
+        return new_user
 
     def get_user_info(self):
         logging.debug(self.user_id)
@@ -67,7 +92,7 @@ def get_user(user_id):
 
 
 def find_user_in_active(user_id):
-    res = db.get_redis(f'userID:{user_id}')
+    res = db.get_redis(f'userID:{user_id}', User)
     return res
     '''
     for i in range(len(active_users)):
